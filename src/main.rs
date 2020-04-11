@@ -7,12 +7,7 @@ use glium::index::PrimitiveType;
 
 #[derive(Copy, Clone)]
 enum GfxCommandTypes {
-    Draw {
-        vertexes_start: u32,
-        indexes_start: u32,
-        num_vertices: usize,
-        num_indexes: usize
-    },
+    Draw,
     NoOp,
     Rotate(f32),
     Scale(f32),
@@ -43,9 +38,9 @@ struct Gfx {
     num_commands: usize,
     commands:          [ GfxCommand; 100 ],
     programs:          Vec< glium::Program >,
+    indices:           Vec< glium::IndexBuffer<u16> >,
     line_vertices:     glium::VertexBuffer<GfxLineVertex>,
-    triangle_vertices: glium::VertexBuffer<GfxTriangleVertex>,
-    indices:           glium::IndexBuffer<u16>
+    triangle_vertices: glium::VertexBuffer<GfxTriangleVertex>
 }
 
 impl GfxCommand {
@@ -60,26 +55,27 @@ impl Gfx {
            triangle_vertices: glium::VertexBuffer<GfxTriangleVertex>, 
            indices: glium::IndexBuffer<u16>) -> Gfx {
         let programs = Vec::new();
-        Gfx { line_vertices: line_vertices,
+        let indices  = Vec::new();
+        Gfx { line_vertices:     line_vertices,
               triangle_vertices: triangle_vertices,
-              indices: indices,
-              num_commands: 0,
-              programs: programs,
-              commands: [GfxCommand::noop(); 100] }
+              num_commands:      0,
+              programs:          programs,
+              indices:           indices,
+              commands:          [GfxCommand::noop(); 100] }
     }
-    fn add_rotate(&mut self, angle: f32) -> usize {
+    fn add_rotation(&mut self, angle: f32) -> usize {
         self.commands[self.num_commands] = GfxCommand { flags:0, 
                                                         command:GfxCommandTypes::Rotate ( angle ) };
         self.num_commands += 1;
         return self.num_commands - 1;
     }
-    fn scale(&mut self, scale: f32) -> usize {
+    fn add_scale(&mut self, scale: f32) -> usize {
         self.commands[self.num_commands] = GfxCommand { flags:0, 
                                                         command:GfxCommandTypes::Scale ( scale ) };
         self.num_commands += 1;
         return self.num_commands - 1;
     }
-    fn translate(&mut self, x: f32, y: f32) -> usize {
+    fn add_translation(&mut self, x: f32, y: f32) -> usize {
         self.commands[self.num_commands] = GfxCommand { flags:0, 
                                                         command:GfxCommandTypes::Translate { x:x, y:y } };
         self.num_commands += 1;
@@ -91,14 +87,33 @@ impl Gfx {
         let mut cur_translation = [ 1.0, 0.0f32 ];
         let mut cur_scale = 0.5f32;
         let mut cur_angle = 0.0f32;
+        let mut cur_indices = 0usize;
+
+        for command in self.commands.iter() {
+            match command.command {
+                GfxCommandTypes::Draw => { println!("draw") },
+                GfxCommandTypes::NoOp => { },
+                GfxCommandTypes::Rotate(angle) => cur_angle = angle,
+                GfxCommandTypes::Scale(scale) => cur_scale = scale,
+                GfxCommandTypes::Translate { x, y } => { cur_translation[0] = x; cur_translation[1] = y }
+            }
+        }
+    
+
         target.clear_color(0.0, 0.0, 0.0, 0.0);
-        target.draw(&self.line_vertices, &self.indices, &self.programs[cur_program], 
+        target.draw(&self.line_vertices, &self.indices[cur_indices], &self.programs[cur_program], 
                     &uniform! {translation: cur_translation, scale:cur_scale, angle:cur_angle}, 
                     &Default::default()).unwrap();
         target.finish().unwrap();
     }
     fn add_program(&mut self, display: &glium::Display, vert_shader: &str, frag_shader: &str) {
-        self.programs.push(program!(display, 140 => {vertex:vert_shader, fragment:frag_shader}).unwrap());
+        self.programs.push(program!(display, 
+                                    140 => {vertex:vert_shader, fragment:frag_shader}).unwrap());
+    }
+    fn add_indices(&mut self, display: &glium::Display, indices: &[u16]) {
+        self.indices.push(glium::IndexBuffer::new(display, 
+                                                  PrimitiveType::LineLoop,
+                                                  indices).unwrap());
     }
 }
 
@@ -175,7 +190,8 @@ fn main() {
                            triangle_buffer,
                            index_buffer);
     gfx.add_program(&display, vertex140, fragment140);
-
+    gfx.add_indices(&display, &[0u16, 1, 2, 3]);
+    gfx.add_rotation(0.5);
     gfx.draw(&display);
 
     // the main loop
