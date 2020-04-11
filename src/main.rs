@@ -98,7 +98,7 @@ impl Gfx {
     fn run(&mut self, display: &glium::Display) {
         let mut target = display.draw();
         let mut cur_program = 0usize;
-        let mut cur_translation = [ 1.0, 0.0f32 ];
+        let mut cur_translation = [ 0.0, 0.0f32 ];
         let mut cur_scale = 0.5f32;
         let mut cur_angle = 0.0f32;
         let mut cur_indices = 0usize;
@@ -218,21 +218,26 @@ fn main() {
 
     // the main loop
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = match event {
+        let next_frame_time = std::time::Instant::now() +
+            std::time::Duration::from_nanos(16_666_667);
+        *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
+            
+        match event {
             glutin::event::Event::WindowEvent { event, .. } => match event {
                 // Break from the main loop when the window is closed.
                 glutin::event::WindowEvent::CloseRequested => glutin::event_loop::ControlFlow::Exit,
                 // Redraw the triangle when the window is resized.
                 glutin::event::WindowEvent::Resized(..) => {
-                    angle += 0.1;
-                    gfx.change_rotation(0,angle);
-                    gfx.run(&mut display);
                     glutin::event_loop::ControlFlow::Poll
                 },
                 _ => glutin::event_loop::ControlFlow::Poll,
             },
             _ => glutin::event_loop::ControlFlow::Poll,
         };
+        
+        angle += 0.01;
+        gfx.change_rotation(0,angle);
+        gfx.run(&mut display);
     });
 }
 
