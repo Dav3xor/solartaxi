@@ -69,19 +69,33 @@ impl Gfx {
         self.num_commands += 1;
         return self.num_commands - 1;
     }
+
+    fn change_rotation(&mut self, id: usize, angle: f32) {
+        self.commands[id].command = GfxCommandTypes::Rotate ( angle );
+    }
+
     fn add_scale(&mut self, scale: f32) -> usize {
         self.commands[self.num_commands] = GfxCommand { flags:0, 
                                                         command:GfxCommandTypes::Scale ( scale ) };
         self.num_commands += 1;
         return self.num_commands - 1;
     }
+    
     fn add_translation(&mut self, x: f32, y: f32) -> usize {
         self.commands[self.num_commands] = GfxCommand { flags:0, 
                                                         command:GfxCommandTypes::Translate { x:x, y:y } };
         self.num_commands += 1;
         return self.num_commands - 1;
     }
-    fn draw(&mut self, display: &glium::Display) {
+    
+    fn add_draw(&mut self) -> usize {
+        self.commands[self.num_commands] = GfxCommand { flags:0, 
+                                                        command:GfxCommandTypes::Draw };
+        self.num_commands += 1;
+        return self.num_commands - 1;
+    }
+
+    fn run(&mut self, display: &glium::Display) {
         let mut target = display.draw();
         let mut cur_program = 0usize;
         let mut cur_translation = [ 1.0, 0.0f32 ];
@@ -89,9 +103,13 @@ impl Gfx {
         let mut cur_angle = 0.0f32;
         let mut cur_indices = 0usize;
 
+        target.clear_color(0.0, 0.0, 0.0, 0.0);
         for command in self.commands.iter() {
             match command.command {
-                GfxCommandTypes::Draw => { println!("draw") },
+                GfxCommandTypes::Draw => {
+                    target.draw(&self.line_vertices, &self.indices[cur_indices], &self.programs[cur_program], 
+                                &uniform! {translation: cur_translation, scale:cur_scale, angle:cur_angle}, 
+                                &Default::default()).unwrap(); },
                 GfxCommandTypes::NoOp => { },
                 GfxCommandTypes::Rotate(angle) => cur_angle = angle,
                 GfxCommandTypes::Scale(scale) => cur_scale = scale,
@@ -100,10 +118,10 @@ impl Gfx {
         }
     
 
-        target.clear_color(0.0, 0.0, 0.0, 0.0);
-        target.draw(&self.line_vertices, &self.indices[cur_indices], &self.programs[cur_program], 
-                    &uniform! {translation: cur_translation, scale:cur_scale, angle:cur_angle}, 
-                    &Default::default()).unwrap();
+        //target.clear_color(0.0, 0.0, 0.0, 0.0);
+        //target.draw(&self.line_vertices, &self.indices[cur_indices], &self.programs[cur_program], 
+        //            &uniform! {translation: cur_translation, scale:cur_scale, angle:cur_angle}, 
+        //            &Default::default()).unwrap();
         target.finish().unwrap();
     }
     fn add_program(&mut self, display: &glium::Display, vert_shader: &str, frag_shader: &str) {
@@ -189,10 +207,14 @@ fn main() {
     let mut gfx = Gfx::new(vertex_buffer, 
                            triangle_buffer,
                            index_buffer);
+    let mut angle = 0.0f32;
+
     gfx.add_program(&display, vertex140, fragment140);
     gfx.add_indices(&display, &[0u16, 1, 2, 3]);
     gfx.add_rotation(0.5);
-    gfx.draw(&display);
+    gfx.add_draw();
+
+    gfx.run(&display);
 
     // the main loop
     event_loop.run(move |event, _, control_flow| {
@@ -202,7 +224,9 @@ fn main() {
                 glutin::event::WindowEvent::CloseRequested => glutin::event_loop::ControlFlow::Exit,
                 // Redraw the triangle when the window is resized.
                 glutin::event::WindowEvent::Resized(..) => {
-                    gfx.draw(&mut display);
+                    angle += 0.1;
+                    gfx.change_rotation(0,angle);
+                    gfx.run(&mut display);
                     glutin::event_loop::ControlFlow::Poll
                 },
                 _ => glutin::event_loop::ControlFlow::Poll,
