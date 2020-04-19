@@ -9,9 +9,14 @@ use glium::index::PrimitiveType;
 enum GfxCommandTypes {
     Draw,
     NoOp,
+    Indices(usize),
     Rotate(f32),
     Scale(f32),
     Translate {
+        x: f32,
+        y: f32
+    },
+    Origin {
         x: f32,
         y: f32
     }
@@ -74,7 +79,7 @@ impl Gfx {
               commands:          commands }
 
     }
-    fn add_rotation(&mut self, angle: f32) -> usize {
+    fn rotate(&mut self, angle: f32) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Rotate ( angle )});
         return self.commands.len() - 1;
     }
@@ -83,30 +88,43 @@ impl Gfx {
         self.commands[id].command = GfxCommandTypes::Rotate ( angle );
     }
 
-    fn add_scale(&mut self, scale: f32) -> usize {
+    fn scale(&mut self, scale: f32) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Scale ( scale )});
         return self.commands.len() - 1;
     }
     
-    fn add_translation(&mut self, x: f32, y: f32) -> usize {
+    fn translate(&mut self, x: f32, y: f32) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Translate { x:x, y:y }});
         self.num_commands += 1;
         return self.num_commands - 1;
     }
     
-    fn add_draw(&mut self) -> usize {
+    fn origin(&mut self, x: f32, y: f32) -> usize {
+        self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Origin { x:x, y:y }});
+        self.num_commands += 1;
+        return self.num_commands - 1;
+    }
+    
+    fn draw(&mut self) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Draw });
+        self.num_commands += 1;
+        return self.num_commands - 1;
+    }
+    
+    fn indices(&mut self, indices: usize) -> usize {
+        self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Indices (indices)});
         self.num_commands += 1;
         return self.num_commands - 1;
     }
 
     fn run(&mut self, display: &glium::Display) {
-        let mut target = display.draw();
-        let mut cur_program = 0usize;
+        let mut target          = display.draw();
+        let mut cur_program     = 0usize;
         let mut cur_translation = [ 0.0, 0.0f32 ];
-        let mut cur_scale = 0.5f32;
-        let mut cur_angle = 0.0f32;
-        let mut cur_indices = 0usize;
+        let mut cur_origin      = [ 0.0, 0.0f32 ];
+        let mut cur_scale       = 0.5f32;
+        let mut cur_angle       = 0.0f32;
+        let mut cur_indices     = 0usize;
 
         if self.backing_changed {
             self.line_vertices = {
@@ -137,10 +155,12 @@ impl Gfx {
                         } 
                     } 
                 },
-                GfxCommandTypes::NoOp => { },
-                GfxCommandTypes::Rotate(angle) => cur_angle = angle,
-                GfxCommandTypes::Scale(scale) => cur_scale = scale,
+                GfxCommandTypes::NoOp               => { },
+                GfxCommandTypes::Indices(index)     => cur_indices = index,
+                GfxCommandTypes::Rotate(angle)      => cur_angle = angle,
+                GfxCommandTypes::Scale(scale)       => cur_scale = scale,
                 GfxCommandTypes::Translate { x, y } => { cur_translation[0] = x; cur_translation[1] = y }
+                GfxCommandTypes::Origin { x, y }    => { cur_origin[0] = x; cur_origin[1] = y }
             }
         }
     
@@ -183,12 +203,13 @@ fn main() {
     let vertex140: &'static str = " #version 140
                                     in vec2 position;
                                     uniform vec2 translation;
+                                    uniform vec2 origin;
                                     uniform float scale;
                                     uniform float angle;
                                     out vec3 vColor;
                                     void main() {
-                                        gl_Position = vec4(((position[0]*cos(angle)-position[1]*sin(angle))+translation[0])*scale,
-                                                           ((position[0]*sin(angle)+position[1]*cos(angle))+translation[1])*scale, 0.0, 1.0);
+                                        gl_Position = vec4(((position[0]*cos(angle)-position[1]*sin(angle))+(translation[0]-origin[0]))*scale,
+                                                           ((position[0]*sin(angle)+position[1]*cos(angle))+(translation[1]-origin[1]))*scale, 0.0, 1.0);
                                         vColor = vec3(1.0,0.0,1.0);
                                     }";
 
@@ -198,51 +219,21 @@ fn main() {
                                       void main() {
                                           f_color = vec4(vColor, 1.0);
                                       }";
-
-
-    /*
-    // building the vertex buffer, which contains all the vertices that we will draw
-    let vertex_buffer = {
-        implement_vertex!(GfxLineVertex, position);
-        
-        glium::VertexBuffer::new(&display, &cv).unwrap()
-    };
-    
-    // building the vertex buffer, which contains all the vertices that we will draw
-    let triangle_buffer = {
-        implement_vertex!(GfxTriangleVertex, position, color);
-
-        glium::VertexBuffer::new(&display,
-            &[
-                GfxTriangleVertex { position: [-0.5, -0.5], color: [0.5,0.5,0.5]},
-                GfxTriangleVertex { position: [ 0.0,  0.5], color: [0.5,0.5,0.5]},
-                GfxTriangleVertex { position: [ 0.5, -0.5], color: [0.5,0.5,0.5]},
-                GfxTriangleVertex { position: [ 0.8, -0.8], color: [0.5,0.5,0.5]},
-            ]
-        ).unwrap()
-    };
-    */ 
-    // building the index buffer
-    //let index_buffer = glium::IndexBuffer::new(&display, PrimitiveType::LineLoop,
-    //                                           &[0u16, 1, 2, 3]).unwrap();
-
-    // compiling shaders and linking them together
-    //let program = program!(&display,
-    //    140 => {
-    //        vertex: vertex140,
-    //        fragment: fragment140
-    //    },
-    //).unwrap();
-
     
     let mut gfx = Gfx::new();
     let mut angle = 0.0f32;
 
     gfx.add_program(&display, vertex140, fragment140);
-    gfx.circle(&display, 5, 0.5);
-    //gfx.add_indices(&display, &[0u16, 1, 2, 3,4,5,6,7,8,9]);
-    gfx.add_rotation(0.5);
-    gfx.add_draw();
+    gfx.circle(&display, 30, 0.5);
+    gfx.rotate(0.5);
+    gfx.translate(0.5,0.0);
+    gfx.scale(5.0);
+    gfx.draw();
+
+    gfx.circle(&display, 30, 0.48);
+    gfx.translate(0.46,0.0);
+    gfx.indices(1);
+    gfx.draw();
 
     gfx.run(&display);
 
@@ -268,7 +259,7 @@ fn main() {
             _ => glutin::event_loop::ControlFlow::Poll,
         };
         
-        angle += 0.01;
+        angle += 0.001;
         gfx.change_rotation(0,angle);
         gfx.run(&mut display);
     });
