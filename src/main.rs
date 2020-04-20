@@ -138,6 +138,10 @@ impl Gfx {
             self.backing_changed = false;
         }
 
+        // set the aspect ratio...
+        let (width, height) = target.get_dimensions();
+        let aspect_ratio = height as f32 / width as f32;
+        
         target.clear_color(0.0, 0.0, 0.0, 0.0);
         for command in self.commands.iter() {
             match command.command {
@@ -148,9 +152,10 @@ impl Gfx {
                             target.draw(vertices, 
                                         &self.indices[cur_indices], 
                                         &self.programs[cur_program], 
-                                        &uniform! {translation: cur_translation, 
-                                                   scale:       cur_scale, 
-                                                   angle:       cur_angle}, 
+                                        &uniform! {translation:  cur_translation, 
+                                                   scale:        cur_scale, 
+                                                   angle:        cur_angle,
+                                                   aspect_ratio: aspect_ratio}, 
                                         &Default::default()).unwrap(); 
                         } 
                     } 
@@ -206,9 +211,10 @@ fn main() {
                                     uniform vec2 origin;
                                     uniform float scale;
                                     uniform float angle;
+                                    uniform float aspect_ratio;
                                     out vec3 vColor;
                                     void main() {
-                                        gl_Position = vec4(((position[0]*cos(angle)-position[1]*sin(angle))+(translation[0]-origin[0]))*scale,
+                                        gl_Position = vec4(((position[0]*cos(angle)-position[1]*sin(angle))+(translation[0]-origin[0]))*scale*aspect_ratio,
                                                            ((position[0]*sin(angle)+position[1]*cos(angle))+(translation[1]-origin[1]))*scale, 0.0, 1.0);
                                         vColor = vec3(1.0,0.0,1.0);
                                     }";
@@ -227,7 +233,7 @@ fn main() {
     gfx.circle(&display, 30, 0.5);
     gfx.rotate(0.5);
     gfx.translate(0.5,0.0);
-    gfx.scale(5.0);
+    gfx.scale(2.0);
     gfx.draw();
 
     gfx.circle(&display, 30, 0.48);
