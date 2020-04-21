@@ -7,8 +7,10 @@ use glium::index::PrimitiveType;
 
 #[derive(Copy, Clone)]
 enum GfxCommandTypes {
-    Draw,
+    LineDraw,
+    TriangleDraw,
     NoOp,
+    Program(usize),
     Indices(usize),
     Rotate(f32),
     Scale(f32),
@@ -30,7 +32,7 @@ struct GfxLineVertex {
 #[derive(Copy, Clone)]
 struct GfxTriangleVertex {
     position: [f32; 2],
-    color:    [f32; 3]
+    color:    [f32; 4]
 }
 
 #[derive(Copy, Clone)]
@@ -79,6 +81,12 @@ impl Gfx {
               commands:          commands }
 
     }
+
+    fn program(&mut self, program: usize) -> usize {
+        self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Program ( program )});
+        return self.commands.len() - 1;
+    }
+
     fn rotate(&mut self, angle: f32) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Rotate ( angle )});
         return self.commands.len() - 1;
@@ -105,8 +113,14 @@ impl Gfx {
         return self.num_commands - 1;
     }
     
-    fn draw(&mut self) -> usize {
-        self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Draw });
+    fn line_draw(&mut self) -> usize {
+        self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::LineDraw });
+        self.num_commands += 1;
+        return self.num_commands - 1;
+    }
+    
+    fn triangle_draw(&mut self) -> usize {
+        self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::TriangleDraw });
         self.num_commands += 1;
         return self.num_commands - 1;
     }
@@ -145,7 +159,7 @@ impl Gfx {
         target.clear_color(0.0, 0.0, 0.0, 0.0);
         for command in self.commands.iter() {
             match command.command {
-                GfxCommandTypes::Draw => {
+                GfxCommandTypes::LineDraw => {
                     match self.line_vertices {
                         None => println!("No Line Vertices Set"),
                         Some(ref vertices) => {
@@ -160,8 +174,24 @@ impl Gfx {
                         } 
                     } 
                 },
+                GfxCommandTypes::TriangleDraw => {
+                    match self.triangle_vertices {
+                        None => println!("No Triangle Vertices Set"),
+                        Some(ref vertices) => {
+                            target.draw(vertices, 
+                                        &self.indices[cur_indices], 
+                                        &self.programs[cur_program], 
+                                        &uniform! {translation:  cur_translation, 
+                                                   scale:        cur_scale, 
+                                                   angle:        cur_angle,
+                                                   aspect_ratio: aspect_ratio}, 
+                                        &Default::default()).unwrap(); 
+                        } 
+                    } 
+                },
                 GfxCommandTypes::NoOp               => { },
                 GfxCommandTypes::Indices(index)     => cur_indices = index,
+                GfxCommandTypes::Program(index)     => cur_program = index,
                 GfxCommandTypes::Rotate(angle)      => cur_angle = angle,
                 GfxCommandTypes::Scale(scale)       => cur_scale = scale,
                 GfxCommandTypes::Translate { x, y } => { cur_translation[0] = x; cur_translation[1] = y }
@@ -176,9 +206,9 @@ impl Gfx {
         self.programs.push(program!(display, 
                                     140 => {vertex:vert_shader, fragment:frag_shader}).unwrap());
     }
-    fn add_indices(&mut self, display: &glium::Display, indices: &[u16]) {
+    fn add_indices(&mut self, display: &glium::Display, indices: &[u16], primitive_type: PrimitiveType) {
         self.indices.push(glium::IndexBuffer::new(display, 
-                                                  PrimitiveType::LineLoop,
+                                                  primitive_type,
                                                   indices).unwrap());
     }
     fn circle(&mut self, display: &glium::Display, num_verts: u32, radius: f32) -> usize {
@@ -191,12 +221,39 @@ impl Gfx {
                                                                angle.cos()*radius ] });
             indices.push((start_vert as u16)+(i as u16));
         }
-        self.add_indices(display, &indices);
+        self.add_indices(display, &indices, PrimitiveType::LineLoop);
         self.backing_changed = true;
         return 0;
-}
-}
+    }
+    fn mountains(&mut self, 
+                 display: &glium::Display, 
+                 inner_radius: f32, 
+                 max_height: f32, 
+                 num_divisions: u32 ) -> usize {
+        let angle_step = (3.14159*2.0)/(num_divisions as f32);
+        let mut indices = Vec::new();
+        let start_vert = self.triangle_backing.len();
+        for i in 0..(num_divisions) {
+            let angle = (i as f32)*angle_step;
+            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+max_height),
+                                                                       angle.cos()*(inner_radius+max_height) ],
+                                                           color:    [0.1, 0.1, 0.3, 1.0]});
 
+            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*inner_radius,
+                                                                       angle.cos()*inner_radius ],
+                                                        color:    [0.2, 0.2, 0.5, 1.0]});
+            indices.push((start_vert as u16)+(i as u16)*2);
+            indices.push((start_vert as u16)+(i as u16)*2+1);
+        }
+        indices.push((start_vert as u16));
+        indices.push((start_vert as u16)+1);
+        self.add_indices(display, &indices, PrimitiveType::TriangleStrip);
+        self.backing_changed = true;
+        return 0;
+    }
+
+}
+ 
 
 
 
@@ -205,42 +262,69 @@ fn main() {
     let wb = glutin::window::WindowBuilder::new();
     let cb = glutin::ContextBuilder::new();
     let mut display = glium::Display::new(wb, cb, &event_loop).unwrap();
-    let vertex140: &'static str = " #version 140
-                                    in vec2 position;
-                                    uniform vec2 translation;
-                                    uniform vec2 origin;
-                                    uniform float scale;
-                                    uniform float angle;
-                                    uniform float aspect_ratio;
-                                    out vec3 vColor;
-                                    void main() {
-                                        gl_Position = vec4(((position[0]*cos(angle)-position[1]*sin(angle))+(translation[0]-origin[0]))*scale*aspect_ratio,
-                                                           ((position[0]*sin(angle)+position[1]*cos(angle))+(translation[1]-origin[1]))*scale, 0.0, 1.0);
-                                        vColor = vec3(1.0,0.0,1.0);
-                                    }";
+    let linevertex140: &'static str = " #version 140
+                                        in vec2 position;
+                                        uniform vec2 translation;
+                                        uniform vec2 origin;
+                                        uniform float scale;
+                                        uniform float angle;
+                                        uniform float aspect_ratio;
+                                        out vec3 vColor;
+                                        void main() {
+                                            gl_Position = vec4(((position[0]*cos(angle)-position[1]*sin(angle))+(translation[0]-origin[0]))*scale*aspect_ratio,
+                                                               ((position[0]*sin(angle)+position[1]*cos(angle))+(translation[1]-origin[1]))*scale, 0.0, 1.0);
+                                            vColor = vec3(1.0,0.0,1.0);
+                                        }";
 
-    let fragment140: &'static str = " #version 140
-                                      in vec3 vColor;
-                                      out vec4 f_color;
-                                      void main() {
-                                          f_color = vec4(vColor, 1.0);
-                                      }";
+    let linefragment140: &'static str = " #version 140
+                                          in vec3 vColor;
+                                          out vec4 f_color;
+                                          void main() {
+                                              f_color = vec4(vColor, 1.0);
+                                          }";
     
+    let trivertex140: &'static str = " #version 140
+                                       in vec2 position;
+                                       in vec4 color;
+                                       uniform vec2 translation;
+                                       uniform vec2 origin;
+                                       uniform float scale;
+                                       uniform float angle;
+                                       uniform float aspect_ratio;
+                                       out vec4 vColor;
+                                       void main() {
+                                           gl_Position = vec4(((position[0]*cos(angle)-position[1]*sin(angle))+(translation[0]-origin[0]))*scale*aspect_ratio,
+                                                              ((position[0]*sin(angle)+position[1]*cos(angle))+(translation[1]-origin[1]))*scale, 0.0, 1.0);
+                                           vColor = color;
+                                       }";
+
+    let trifragment140: &'static str = " #version 140
+                                         in vec4 vColor;
+                                         out vec4 f_color;
+                                         void main() {
+                                             f_color = vec4(vColor);
+                                         }";
+   
     let mut gfx = Gfx::new();
     let mut angle = 0.0f32;
 
-    gfx.add_program(&display, vertex140, fragment140);
+    gfx.add_program(&display, linevertex140, linefragment140);
+    gfx.add_program(&display, trivertex140, trifragment140);
     gfx.circle(&display, 30, 0.5);
     gfx.rotate(0.5);
     gfx.translate(0.5,0.0);
     gfx.scale(2.0);
-    gfx.draw();
+    gfx.line_draw();
 
     gfx.circle(&display, 30, 0.48);
     gfx.translate(0.46,0.0);
     gfx.indices(1);
-    gfx.draw();
+    gfx.line_draw();
 
+    gfx.mountains(&display, 0.3, 0.05, 50);
+    gfx.indices(2);
+    gfx.program(1);
+    gfx.triangle_draw();
     gfx.run(&display);
 
     // the main loop
