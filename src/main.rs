@@ -5,6 +5,9 @@ extern crate glium;
 use glium::{glutin, Surface};
 use glium::index::PrimitiveType;
 
+use rand::prelude::*;
+use rand_distr::Exp1;
+
 #[derive(Copy, Clone)]
 enum GfxCommandTypes {
     LineDraw,
@@ -69,6 +72,7 @@ impl Gfx {
         let line_backing = Vec::new();
         let triangle_backing = Vec::new();
         let commands = Vec::new();
+        let params = glium::DrawParameters { blend: glium::draw_parameters::Blend::alpha_blending(), .. Default::default() };
 
         Gfx { line_vertices:     line_vertices,
               triangle_vertices: triangle_vertices,
@@ -225,19 +229,67 @@ impl Gfx {
         self.backing_changed = true;
         return 0;
     }
-    fn mountains(&mut self, 
-                 display: &glium::Display, 
-                 inner_radius: f32, 
-                 max_height: f32, 
-                 num_divisions: u32 ) -> usize {
+
+    fn sky(&mut self,
+           display: &glium::Display, 
+           inner_radius: f32,
+           height: f32,
+           num_divisions: u32) -> usize {
         let angle_step = (3.14159*2.0)/(num_divisions as f32);
         let mut indices = Vec::new();
         let start_vert = self.triangle_backing.len();
         for i in 0..(num_divisions) {
             let angle = (i as f32)*angle_step;
-            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+max_height),
-                                                                       angle.cos()*(inner_radius+max_height) ],
-                                                           color:    [0.1, 0.1, 0.3, 1.0]});
+            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
+                                                                       angle.cos()*(inner_radius+height) ],
+                                                           color:    [0.1, 0.2, 0.5, 1.0]});
+
+            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*inner_radius,
+                                                                       angle.cos()*inner_radius ],
+                                                           color:    [0.3, 0.5, 0.5, 1.0]});
+            indices.push((start_vert as u16)+(i as u16)*2);
+            indices.push((start_vert as u16)+(i as u16)*2+1);
+        }
+        indices.push((start_vert as u16));
+        indices.push((start_vert as u16)+1);
+        let start_vert = self.triangle_backing.len();
+        for i in 0..(num_divisions) {
+            let angle = (i as f32)*angle_step;
+            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+(height*2.0)),
+                                                                       angle.cos()*(inner_radius+(height*2.0)) ],
+                                                           color:    [0.0, 0.0, 0.0, 1.0]});
+            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
+                                                                       angle.cos()*(inner_radius+height) ],
+                                                           color:    [0.1, 0.2, 0.5, 1.0]});
+
+            indices.push((start_vert as u16)+(i as u16)*2);
+            indices.push((start_vert as u16)+(i as u16)*2+1);
+        }
+        indices.push((start_vert as u16));
+        indices.push((start_vert as u16)+1);
+        self.add_indices(display, &indices, PrimitiveType::TriangleStrip);
+        self.backing_changed = true;
+        return 0;
+    }
+
+
+    fn mountains(&mut self, 
+                 display: &glium::Display, 
+                 height_fn: fn(f32) -> f32,
+                 inner_radius: f32, 
+                 num_divisions: u32 ) -> usize {
+        let angle_step = (3.14159*2.0)/(num_divisions as f32);
+        let mut indices = Vec::new();
+        let start_vert = self.triangle_backing.len();
+        for i in 0..(num_divisions) {
+
+            let angle = (i as f32)*angle_step;
+            let height_modifier: f32 = thread_rng().sample(Exp1);
+            //let height = (((height_modifier as f32) * max_height) / 10.0)+(max_height);
+            let height = height_fn(angle);
+            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
+                                                                       angle.cos()*(inner_radius+height) ],
+                                                           color:    [0.05, 0.05, 0.1, 1.0]});
 
             self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*inner_radius,
                                                                        angle.cos()*inner_radius ],
@@ -255,7 +307,15 @@ impl Gfx {
 }
  
 
+fn tall_mountains(angle: f32) -> f32 {
+    let max_height = 0.02f32;
+    return (max_height*1.2) + (max_height * (angle*11.0).sin()*0.3) + (max_height * (angle*13.0).cos()*0.3);
+}
 
+fn short_mountains(angle: f32) -> f32 {
+    let max_height = 0.01f32;
+    return (max_height*1.2) + (max_height * (angle*23.0).sin()*0.3) + (max_height * (angle*29.0).cos()*0.2);
+}
 
 fn main() {
     let event_loop = glutin::event_loop::EventLoop::new();
@@ -308,23 +368,32 @@ fn main() {
     let mut gfx = Gfx::new();
     let mut angle = 0.0f32;
 
+    gfx.mountains(&display, tall_mountains, 0.3, 80);
+    gfx.mountains(&display, short_mountains, 0.35, 200);
+    gfx.sky(&display, 0.5, 0.05, 50);
+
     gfx.add_program(&display, linevertex140, linefragment140);
     gfx.add_program(&display, trivertex140, trifragment140);
-    gfx.circle(&display, 30, 0.5);
     gfx.rotate(0.5);
-    gfx.translate(0.5,0.0);
-    gfx.scale(2.0);
-    gfx.line_draw();
+    gfx.scale(10.0);
 
-    gfx.circle(&display, 30, 0.48);
-    gfx.translate(0.46,0.0);
-    gfx.indices(1);
-    gfx.line_draw();
-
-    gfx.mountains(&display, 0.3, 0.05, 50);
-    gfx.indices(2);
+    // draw sky
     gfx.program(1);
+    gfx.translate(0.0,-0.5);
+    gfx.indices(2);
     gfx.triangle_draw();
+
+    // tall mountains
+    gfx.translate(0.0,-0.3);
+    gfx.indices(0);
+    gfx.triangle_draw();
+
+    // hills
+    gfx.translate(0.0,-0.35);
+    gfx.indices(1);
+    gfx.triangle_draw();
+
+
     gfx.run(&display);
 
     // the main loop
