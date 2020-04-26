@@ -143,7 +143,10 @@ impl Gfx {
         let mut cur_scale       = 0.5f32;
         let mut cur_angle       = 0.0f32;
         let mut cur_indices     = 0usize;
-
+        let params = glium::DrawParameters {
+            line_width: Some(2.0),
+            ..Default::default()
+        };
         if self.backing_changed {
             self.line_vertices = {
                 implement_vertex!(GfxLineVertex, position);
@@ -174,7 +177,7 @@ impl Gfx {
                                                    scale:        cur_scale, 
                                                    angle:        cur_angle,
                                                    aspect_ratio: aspect_ratio}, 
-                                        &Default::default()).unwrap(); 
+                                        &params).unwrap(); 
                         } 
                     } 
                 },
@@ -189,7 +192,7 @@ impl Gfx {
                                                    scale:        cur_scale, 
                                                    angle:        cur_angle,
                                                    aspect_ratio: aspect_ratio}, 
-                                        &Default::default()).unwrap(); 
+                                        &params).unwrap(); 
                         } 
                     } 
                 },
@@ -215,6 +218,119 @@ impl Gfx {
                                                   primitive_type,
                                                   indices).unwrap());
     }
+
+    fn ship(&mut self, display: &glium::Display) -> usize {
+        let start_vert = self.triangle_backing.len();
+        
+        // fuselage, top to bottom... tip to tail
+        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 19.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 0
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, 16.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 1
+        self.triangle_backing.push( GfxTriangleVertex { position: [  1.0, 16.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 2
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -3.0, 7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 3
+        self.triangle_backing.push( GfxTriangleVertex { position: [  3.0, 7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 4
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -4.0, -4.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 5
+        self.triangle_backing.push( GfxTriangleVertex { position: [  4.0, -4.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 6
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, -11.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 7
+        self.triangle_backing.push( GfxTriangleVertex { position: [  2.0, -11.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 8
+        // left wing, starting with forwardmost point
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -3.0, 3.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 9
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -6.0, -1.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 10
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -12.0, -5.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 11
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -12.0, -7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 12
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -11.0, -8.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 12
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -3.0, -7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 13 
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, -0.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 14 
+        // right wing, starting with forwardmost point
+        self.triangle_backing.push( GfxTriangleVertex { position: [  3.0, 3.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 15
+        self.triangle_backing.push( GfxTriangleVertex { position: [  6.0, -1.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 16 
+        self.triangle_backing.push( GfxTriangleVertex { position: [  12.0, -5.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 17 
+        self.triangle_backing.push( GfxTriangleVertex { position: [  12.0, -7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 18 
+        self.triangle_backing.push( GfxTriangleVertex { position: [  11.0, -8.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 12
+        self.triangle_backing.push( GfxTriangleVertex { position: [  3.0, -7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 19 
+        self.triangle_backing.push( GfxTriangleVertex { position: [  2.0, -0.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 20 
+        // tail
+        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, -6.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 21 
+        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, -14.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 22 
+        
+        let mut indices = Vec::new();
+
+        // fuselage
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+1);
+        indices.push((start_vert as u16)+2);
+
+        indices.push((start_vert as u16)+1);
+        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u16)+3);
+
+        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u16)+4);
+
+        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u16)+4);
+        indices.push((start_vert as u16)+5);
+        
+        indices.push((start_vert as u16)+4);
+        indices.push((start_vert as u16)+5);
+        indices.push((start_vert as u16)+6);
+
+        indices.push((start_vert as u16)+5);
+        indices.push((start_vert as u16)+6);
+        indices.push((start_vert as u16)+7);
+        
+        indices.push((start_vert as u16)+6);
+        indices.push((start_vert as u16)+7);
+        indices.push((start_vert as u16)+8);
+
+        // left wing
+        indices.push((start_vert as u16)+10);
+        indices.push((start_vert as u16)+9);
+        indices.push((start_vert as u16)+15);
+        
+        indices.push((start_vert as u16)+10);
+        indices.push((start_vert as u16)+15);
+        indices.push((start_vert as u16)+14);
+        
+        indices.push((start_vert as u16)+10);
+        indices.push((start_vert as u16)+14);
+        indices.push((start_vert as u16)+13);
+        
+        indices.push((start_vert as u16)+10);
+        indices.push((start_vert as u16)+13);
+        indices.push((start_vert as u16)+12);
+        
+        indices.push((start_vert as u16)+10);
+        indices.push((start_vert as u16)+12);
+        indices.push((start_vert as u16)+11);
+
+        // right wing
+        indices.push((start_vert as u16)+17);
+        indices.push((start_vert as u16)+16);
+        indices.push((start_vert as u16)+22);
+
+         
+        indices.push((start_vert as u16)+17);
+        indices.push((start_vert as u16)+22);
+        indices.push((start_vert as u16)+21);
+        
+        indices.push((start_vert as u16)+17);
+        indices.push((start_vert as u16)+21);
+        indices.push((start_vert as u16)+20);
+        
+        indices.push((start_vert as u16)+17);
+        indices.push((start_vert as u16)+20);
+        indices.push((start_vert as u16)+19);
+        
+        indices.push((start_vert as u16)+17);
+        indices.push((start_vert as u16)+19);
+        indices.push((start_vert as u16)+18);
+        
+        self.add_indices(display, &indices, PrimitiveType::TriangleStrip);
+        self.backing_changed = true;
+        return 0;
+    }
+
     fn circle(&mut self, display: &glium::Display, num_verts: u32, radius: f32) -> usize {
         let angle_step = (3.14159*2.0)/(num_verts as f32);
         let mut indices = Vec::new();
@@ -246,7 +362,7 @@ impl Gfx {
 
             self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*inner_radius,
                                                                        angle.cos()*inner_radius ],
-                                                           color:    [0.3, 0.5, 0.5, 1.0]});
+                                                           color:    [0.3, 0.4, 0.5, 1.0]});
             indices.push((start_vert as u16)+(i as u16)*2);
             indices.push((start_vert as u16)+(i as u16)*2+1);
         }
@@ -255,8 +371,8 @@ impl Gfx {
         let start_vert = self.triangle_backing.len();
         for i in 0..(num_divisions) {
             let angle = (i as f32)*angle_step;
-            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+(height*2.0)),
-                                                                       angle.cos()*(inner_radius+(height*2.0)) ],
+            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+(height*1.8)),
+                                                                       angle.cos()*(inner_radius+(height*1.8)) ],
                                                            color:    [0.0, 0.0, 0.0, 1.0]});
             self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
                                                                        angle.cos()*(inner_radius+height) ],
@@ -308,13 +424,13 @@ impl Gfx {
  
 
 fn tall_mountains(angle: f32) -> f32 {
-    let max_height = 0.02f32;
-    return (max_height*1.2) + (max_height * (angle*11.0).sin()*0.3) + (max_height * (angle*13.0).cos()*0.3);
+    let max_height = 3.0f32;
+    return (max_height*1.2) + (max_height * (angle*83.0).sin()*0.3) + (max_height * (angle*61.0).cos()*0.3);
 }
 
 fn short_mountains(angle: f32) -> f32 {
-    let max_height = 0.01f32;
-    return (max_height*1.2) + (max_height * (angle*23.0).sin()*0.3) + (max_height * (angle*29.0).cos()*0.2);
+    let max_height = 1.0f32;
+    return (max_height*1.25) + (max_height * (angle*59.0).sin()*0.7) + (max_height * (angle*29.0).cos()*0.7);
 }
 
 fn main() {
@@ -333,7 +449,7 @@ fn main() {
                                         void main() {
                                             gl_Position = vec4(((position[0]*cos(angle)-position[1]*sin(angle))+(translation[0]-origin[0]))*scale*aspect_ratio,
                                                                ((position[0]*sin(angle)+position[1]*cos(angle))+(translation[1]-origin[1]))*scale, 0.0, 1.0);
-                                            vColor = vec3(1.0,0.0,1.0);
+                                            vColor = vec3(1.0,1.0,1.0);
                                         }";
 
     let linefragment140: &'static str = " #version 140
@@ -368,32 +484,43 @@ fn main() {
     let mut gfx = Gfx::new();
     let mut angle = 0.0f32;
 
-    gfx.mountains(&display, tall_mountains, 0.3, 80);
-    gfx.mountains(&display, short_mountains, 0.35, 200);
-    gfx.sky(&display, 0.5, 0.05, 50);
+    gfx.mountains(&display, tall_mountains, 300.0, 1000);
+    gfx.mountains(&display, short_mountains, 350.0, 300);
+    gfx.sky(&display, 1000.0, 8.0, 200);
+    gfx.circle(&display, 400, 1000.0);
+    gfx.ship(&display);
 
     gfx.add_program(&display, linevertex140, linefragment140);
     gfx.add_program(&display, trivertex140, trifragment140);
     gfx.rotate(0.5);
-    gfx.scale(10.0);
+    gfx.scale(0.05);
 
     // draw sky
     gfx.program(1);
-    gfx.translate(0.0,-0.5);
+    gfx.translate(0.0,-1000.0);
     gfx.indices(2);
     gfx.triangle_draw();
 
     // tall mountains
-    gfx.translate(0.0,-0.3);
+    gfx.translate(0.0,-300.0);
     gfx.indices(0);
     gfx.triangle_draw();
 
     // hills
-    gfx.translate(0.0,-0.35);
+    gfx.translate(0.0,-350.0);
     gfx.indices(1);
     gfx.triangle_draw();
 
+    gfx.program(0);
+    gfx.translate(0.0,-1000.0);
+    gfx.indices(3);
+    gfx.line_draw();
 
+    gfx.program(1);
+    gfx.translate(0.0,0.0);
+    gfx.indices(4);
+    gfx.triangle_draw();
+    
     gfx.run(&display);
 
     // the main loop
@@ -418,7 +545,7 @@ fn main() {
             _ => glutin::event_loop::ControlFlow::Poll,
         };
         
-        angle += 0.001;
+        angle += 0.0001;
         gfx.change_rotation(0,angle);
         gfx.run(&mut display);
     });
