@@ -8,6 +8,8 @@ use glium::index::PrimitiveType;
 use rand::prelude::*;
 use rand_distr::Exp1;
 
+
+
 #[derive(Copy, Clone)]
 enum GfxCommandTypes {
     LineDraw,
@@ -54,6 +56,54 @@ struct Gfx {
     line_vertices:     Option<glium::VertexBuffer<GfxLineVertex>>,
     triangle_vertices: Option<glium::VertexBuffer<GfxTriangleVertex>>,
     backing_changed:   bool
+}
+
+const ROTATE_LEFT: u32 = 1;
+const ROTATE_RIGHT: u32 = 2;
+const THRUST_ON: u32 = 4;
+
+struct PlayerShip {
+    position: [f32; 2],
+    velocity: [f32; 2],
+    angle: f32,
+    flags: u32,
+    gfx_angle: usize,
+    gfx_translation: usize,
+    gfx_origin: usize,
+}
+
+impl PlayerShip {
+    fn new(gfx_angle: usize,
+           gfx_translation: usize,
+           gfx_origin: usize) -> PlayerShip {
+        PlayerShip { position:      [0.0f32, 0.0],
+                     velocity:      [0.0f32, 0.0],
+                     angle: 0.0f32,
+                     flags: 0,
+                     gfx_angle: gfx_angle,
+                     gfx_translation: gfx_translation,
+                     gfx_origin: gfx_origin }
+    }
+
+    fn thrust_on(&mut self) {
+        self.flags |= THRUST_ON;
+    }
+
+    fn thrust_off(&mut self) {
+        self.flags &= !THRUST_ON;
+    }
+    
+    fn rotate_left(&mut self) {
+        self.flags |= ROTATE_LEFT;
+    }
+
+    fn rotate_right(&mut self) {
+        self.flags |= ROTATE_RIGHT;
+    }
+
+    fn rotate_off(&mut self) {
+        self.flags &= !(ROTATE_LEFT+ROTATE_RIGHT);
+    }
 }
 
 impl GfxCommand {
@@ -681,14 +731,13 @@ fn main() {
                 glutin::event::WindowEvent::CloseRequested => {
                     *control_flow = glutin::event_loop::ControlFlow::Exit;
                     return;
-                }
-                // Redraw the triangle when the window is resized.
-                glutin::event::WindowEvent::Resized(..) => {
-                    glutin::event_loop::ControlFlow::Poll
                 },
-                _ => glutin::event_loop::ControlFlow::Poll,
+                glutin::event::WindowEvent::KeyboardInput { device_id, input, is_synthetic  } => {
+                    println!("key: {0} {1}", input.scancode, if input.state == glutin::event::ElementState::Pressed { "pressed" } else { "released" } );
+                },
+                _ => ()
             },
-            _ => glutin::event_loop::ControlFlow::Poll,
+            _ => ()
         };
         
         angle += 0.0001;
