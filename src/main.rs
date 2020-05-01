@@ -67,19 +67,22 @@ struct PlayerShip {
     velocity: [f32; 2],
     angle: f32,
     flags: u32,
+    gfx_geometry: usize,
     gfx_angle: usize,
     gfx_translation: usize,
     gfx_origin: usize,
 }
 
 impl PlayerShip {
-    fn new(gfx_angle: usize,
+    fn new(gfx_geometry: usize,
+           gfx_angle: usize,
            gfx_translation: usize,
            gfx_origin: usize) -> PlayerShip {
         PlayerShip { position:      [0.0f32, 0.0],
                      velocity:      [0.0f32, 0.0],
                      angle: 0.0f32,
                      flags: 0,
+                     gfx_geometry: gfx_geometry,
                      gfx_angle: gfx_angle,
                      gfx_translation: gfx_translation,
                      gfx_origin: gfx_origin }
@@ -104,6 +107,16 @@ impl PlayerShip {
     fn rotate_off(&mut self) {
         self.flags &= !(ROTATE_LEFT+ROTATE_RIGHT);
     }
+
+    fn tick(&mut self, gfx: &mut Gfx) {
+        if self.flags & ROTATE_LEFT != 0 {
+            self.angle += 0.01;
+        } else if self.flags & ROTATE_RIGHT != 0 {
+            self.angle -= 0.01;
+        }
+        gfx.change_rotation(self.gfx_angle, self.angle);
+    }
+
 }
 
 impl GfxCommand {
@@ -159,6 +172,10 @@ impl Gfx {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Translate { x:x, y:y }});
         self.num_commands += 1;
         return self.num_commands - 1;
+    }
+    
+    fn change_translation(&mut self, id: usize, x: f32, y: f32) {
+        self.commands[id].command = GfxCommandTypes::Translate { x:x, y:y };
     }
     
     fn origin(&mut self, x: f32, y: f32) -> usize {
@@ -281,9 +298,9 @@ impl Gfx {
         self.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, 16.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 4  first past nosecone
         self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 16.0 ], color: [ 0.4, 0.4, 0.4, 1.0 ] }); // 5  first past nosecone
         self.triangle_backing.push( GfxTriangleVertex { position: [  1.0, 16.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 6
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -3.0, 7.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 7
+        self.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, 7.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 7
         self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 8
-        self.triangle_backing.push( GfxTriangleVertex { position: [  3.0, 7.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 9
+        self.triangle_backing.push( GfxTriangleVertex { position: [  2.0, 7.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 9
         self.triangle_backing.push( GfxTriangleVertex { position: [ -4.0, -4.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 10
         self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, -4.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 11
         self.triangle_backing.push( GfxTriangleVertex { position: [  4.0, -4.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 12
@@ -524,7 +541,7 @@ impl Gfx {
 
         self.add_indices(display, &indices, PrimitiveType::TrianglesList);
         self.backing_changed = true;
-        return 0;
+        return self.indices.len();
     }
 
     fn circle(&mut self, display: &glium::Display, num_verts: u32, radius: f32) -> usize {
@@ -684,7 +701,6 @@ fn main() {
     gfx.mountains(&display, short_mountains, 350.0, 300);
     gfx.sky(&display, 1000.0, 8.0, 200);
     gfx.circle(&display, 400, 1000.0);
-    gfx.ship(&display);
 
     gfx.add_program(&display, linevertex140, linefragment140);
     gfx.add_program(&display, trivertex140, trifragment140);
@@ -713,7 +729,11 @@ fn main() {
     gfx.line_draw();
 
     gfx.program(1);
-    gfx.translate(0.0,0.0);
+
+    let mut player_ship = PlayerShip::new(gfx.ship(&display),
+                                          gfx.rotate(0.0),
+                                          gfx.translate(0.0,0.0),
+                                          gfx.origin(0.0,0.0));
     gfx.indices(4);
     gfx.triangle_draw();
     
@@ -733,7 +753,16 @@ fn main() {
                     return;
                 },
                 glutin::event::WindowEvent::KeyboardInput { device_id, input, is_synthetic  } => {
-                    println!("key: {0} {1}", input.scancode, if input.state == glutin::event::ElementState::Pressed { "pressed" } else { "released" } );
+                    if input.state == glutin::event::ElementState::Released {
+                        player_ship.rotate_off();
+                    } else if input.scancode == 105 && input.state == glutin::event::ElementState::Pressed {
+                        player_ship.rotate_left();
+                    } else if input.scancode == 106 && input.state == glutin::event::ElementState::Pressed {
+                        player_ship.rotate_right();
+                    }
+                    println!("key: {0} {1} {2}", input.scancode, 
+                                                 if input.state == glutin::event::ElementState::Pressed { "pressed" } else { "released" },
+                                                 is_synthetic);
                 },
                 _ => ()
             },
@@ -742,6 +771,7 @@ fn main() {
         
         angle += 0.0001;
         gfx.change_rotation(0,angle);
+        player_ship.tick(&mut gfx);
         gfx.run(&mut display);
     });
 }
