@@ -88,6 +88,264 @@ impl PlayerShip {
                      gfx_origin: gfx_origin }
     }
 
+    fn geometry(gfx: &mut Gfx, display: &glium::Display) -> usize{
+        let start_vert = gfx.triangle_backing.len();
+        
+        // fuselage, top to bottom... tip to tail
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 19.0 ], color: [ 0.6, 0.5, 0.5, 1.0 ] }); // 0  nosecone
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, 16.0 ], color: [ 0.3, 0.25, 0.2, 1.0 ] }); // 1
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 16.0 ], color: [ 0.8, 0.6, 0.6, 1.0 ] }); // 2
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  1.0, 16.0 ], color: [ 0.3, 0.25, 0.2, 1.0 ] }); // 3
+        
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, 16.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 4  first past nosecone
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 16.0 ], color: [ 0.4, 0.4, 0.4, 1.0 ] }); // 5  first past nosecone
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  1.0, 16.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 6
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, 7.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 7
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 8
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  2.0, 7.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 9
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -4.0, -4.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 10
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, -4.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 11
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  4.0, -4.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 12
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, -11.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 13
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, -11.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 14
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  2.0, -11.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 15
+
+
+
+        // left wing, starting with forwardmost point
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -3.0, 3.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 16
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -6.0, -1.0 ], color: [ 0.25, 0.25, 0.25, 1.0 ] }); // 17
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -12.0, -5.0 ], color: [ 0.4, 0.4, 0.4, 1.0 ] }); // 18
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -12.0, -7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 19
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -11.0, -8.0 ], color: [ 0.6, 0.6, 0.6, 1.0 ] }); // 20
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.9, -7.0 ], color: [ 0.65, 0.65, 0.65, 1.0 ] }); // 21 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, -0.0 ], color: [ 0.7, 0.7, 0.7, 1.0 ] }); // 22 
+        // right wing, starting with forwardmost point
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  3.0, 3.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 23
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  6.0, -1.0 ], color: [ 0.25, 0.25, 0.25, 1.0 ] }); // 24 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  12.0, -5.0 ], color: [ 0.4, 0.4, 0.4, 1.0 ] }); // 25 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  12.0, -7.0 ], color: [ 0.6, 0.6, 0.6, 1.0 ] }); // 26 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  11.0, -8.0 ], color: [ 0.6, 0.6, 0.6, 1.0 ] }); // 27
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  2.9, -7.0 ], color: [ 0.65, 0.65, 0.65, 1.0 ] }); // 28 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  2.0, -0.0 ], color: [ 0.7, 0.7, 0.7, 1.0 ] }); // 29 
+
+        // cockpit
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 8.5 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 30 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  1.3, 4.6 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 31 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 5.5 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 32 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.3, 4.6 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 33 
+      
+        // left middle window
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.2, 5.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 34 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.4, 4.2 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 35 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.5, 3.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 36 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.9, 2.8 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 37 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.8, 3.7 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 38 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.3, 4.2 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 39 
+        
+        // left rear window
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.5, 2.8 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 40 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.3, 1.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 41 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, 1.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 42 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.9, 2.5 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 43 
+
+        // right middle window
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.2, 5.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 44 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  1.4, 4.2 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 45 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  1.5, 3.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 46 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.9, 2.8 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 47 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.8, 3.7 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 48 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.3, 4.2 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 49 
+        
+        // right rear window
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  1.5, 2.8 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 50 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  1.3, 1.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 51 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  1.0, 1.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 52 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.9, 2.5 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 53 
+
+        // tail
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, -6.0 ], color: [ 0.8, 0.8, 0.8, 1.0 ] }); // 54 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.5, -8.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 55 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, -13.0 ], color: [ 0.8, 0.8, 0.8, 1.0 ] }); // 56 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.5, -8.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        
+        let mut indices = Vec::new();
+
+        // fuselage
+        indices.push((start_vert as u16)+0); // nose cone
+        indices.push((start_vert as u16)+1);
+        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u16)+3);
+
+        
+        indices.push((start_vert as u16)+4); // forward fuselage left
+        indices.push((start_vert as u16)+7);
+        indices.push((start_vert as u16)+8);
+
+        indices.push((start_vert as u16)+4);
+        indices.push((start_vert as u16)+5);
+        indices.push((start_vert as u16)+8);
+
+        indices.push((start_vert as u16)+5); // forward fuselage right
+        indices.push((start_vert as u16)+6);
+        indices.push((start_vert as u16)+8);
+
+        indices.push((start_vert as u16)+6);
+        indices.push((start_vert as u16)+8);
+        indices.push((start_vert as u16)+9);
+
+        indices.push((start_vert as u16)+7); // middle fuselage left
+        indices.push((start_vert as u16)+10);
+        indices.push((start_vert as u16)+11);
+
+        indices.push((start_vert as u16)+7);
+        indices.push((start_vert as u16)+8);
+        indices.push((start_vert as u16)+11);
+
+        indices.push((start_vert as u16)+8); // middle fuselage right
+        indices.push((start_vert as u16)+9);
+        indices.push((start_vert as u16)+11);
+
+        indices.push((start_vert as u16)+9);
+        indices.push((start_vert as u16)+11);
+        indices.push((start_vert as u16)+12);
+
+        indices.push((start_vert as u16)+10); // aft fuselage left
+        indices.push((start_vert as u16)+13);
+        indices.push((start_vert as u16)+14);
+       
+        indices.push((start_vert as u16)+10);
+        indices.push((start_vert as u16)+11);
+        indices.push((start_vert as u16)+14);
+
+        indices.push((start_vert as u16)+11); // aft fuselage right
+        indices.push((start_vert as u16)+12);
+        indices.push((start_vert as u16)+14);
+        
+        indices.push((start_vert as u16)+12);
+        indices.push((start_vert as u16)+14);
+        indices.push((start_vert as u16)+15);
+
+        // left wing
+        
+        indices.push((start_vert as u16)+17);
+        indices.push((start_vert as u16)+16);
+        indices.push((start_vert as u16)+22);
+        
+        indices.push((start_vert as u16)+17);
+        indices.push((start_vert as u16)+22);
+        indices.push((start_vert as u16)+21);
+        
+        indices.push((start_vert as u16)+17);
+        indices.push((start_vert as u16)+21);
+        indices.push((start_vert as u16)+20);
+        
+        indices.push((start_vert as u16)+17);
+        indices.push((start_vert as u16)+20);
+        indices.push((start_vert as u16)+19);
+        
+        indices.push((start_vert as u16)+17);
+        indices.push((start_vert as u16)+19);
+        indices.push((start_vert as u16)+18);
+        // right wing
+        indices.push((start_vert as u16)+24);
+        indices.push((start_vert as u16)+23);
+        indices.push((start_vert as u16)+29);
+         
+        indices.push((start_vert as u16)+24);
+        indices.push((start_vert as u16)+29);
+        indices.push((start_vert as u16)+28);
+        
+        indices.push((start_vert as u16)+24);
+        indices.push((start_vert as u16)+28);
+        indices.push((start_vert as u16)+27);
+        
+        indices.push((start_vert as u16)+24);
+        indices.push((start_vert as u16)+27);
+        indices.push((start_vert as u16)+26);
+        
+        indices.push((start_vert as u16)+24);
+        indices.push((start_vert as u16)+26);
+        indices.push((start_vert as u16)+25);
+
+        // cockpit
+        indices.push((start_vert as u16)+30);
+        indices.push((start_vert as u16)+31);
+        indices.push((start_vert as u16)+32);
+
+        indices.push((start_vert as u16)+32);
+        indices.push((start_vert as u16)+33);
+        indices.push((start_vert as u16)+30);
+
+        // left middle window 
+        indices.push((start_vert as u16)+35);
+        indices.push((start_vert as u16)+34);
+        indices.push((start_vert as u16)+39);
+        
+        indices.push((start_vert as u16)+35);
+        indices.push((start_vert as u16)+39);
+        indices.push((start_vert as u16)+38);
+        
+        indices.push((start_vert as u16)+35);
+        indices.push((start_vert as u16)+36);
+        indices.push((start_vert as u16)+38);
+
+        indices.push((start_vert as u16)+36);
+        indices.push((start_vert as u16)+37);
+        indices.push((start_vert as u16)+38);
+        
+        // left rear window
+        indices.push((start_vert as u16)+40);
+        indices.push((start_vert as u16)+43);
+        indices.push((start_vert as u16)+41);
+
+        indices.push((start_vert as u16)+41);
+        indices.push((start_vert as u16)+42);
+        indices.push((start_vert as u16)+43);
+
+        // right middle window 
+        indices.push((start_vert as u16)+45);
+        indices.push((start_vert as u16)+44);
+        indices.push((start_vert as u16)+49);
+        
+        indices.push((start_vert as u16)+45);
+        indices.push((start_vert as u16)+49);
+        indices.push((start_vert as u16)+48);
+        
+        indices.push((start_vert as u16)+45);
+        indices.push((start_vert as u16)+46);
+        indices.push((start_vert as u16)+48);
+
+        indices.push((start_vert as u16)+46);
+        indices.push((start_vert as u16)+47);
+        indices.push((start_vert as u16)+48);
+        
+        // right rear window
+        indices.push((start_vert as u16)+50);
+        indices.push((start_vert as u16)+53);
+        indices.push((start_vert as u16)+51);
+
+        indices.push((start_vert as u16)+51);
+        indices.push((start_vert as u16)+52);
+        indices.push((start_vert as u16)+53);
+
+
+        // fin
+        indices.push((start_vert as u16)+54);
+        indices.push((start_vert as u16)+55);
+        indices.push((start_vert as u16)+56);
+
+        indices.push((start_vert as u16)+56);
+        indices.push((start_vert as u16)+57);
+        indices.push((start_vert as u16)+54);
+
+        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
+        gfx.backing_changed = true;
+        return gfx.indices.len()-1;
+    }
+
     fn thrust_on(&mut self) {
         self.flags |= THRUST_ON;
     }
@@ -286,263 +544,6 @@ impl Gfx {
                                                   indices).unwrap());
     }
 
-    fn ship(&mut self, display: &glium::Display) -> usize {
-        let start_vert = self.triangle_backing.len();
-        
-        // fuselage, top to bottom... tip to tail
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 19.0 ], color: [ 0.6, 0.5, 0.5, 1.0 ] }); // 0  nosecone
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, 16.0 ], color: [ 0.3, 0.25, 0.2, 1.0 ] }); // 1
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 16.0 ], color: [ 0.8, 0.6, 0.6, 1.0 ] }); // 2
-        self.triangle_backing.push( GfxTriangleVertex { position: [  1.0, 16.0 ], color: [ 0.3, 0.25, 0.2, 1.0 ] }); // 3
-        
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, 16.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 4  first past nosecone
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 16.0 ], color: [ 0.4, 0.4, 0.4, 1.0 ] }); // 5  first past nosecone
-        self.triangle_backing.push( GfxTriangleVertex { position: [  1.0, 16.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 6
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, 7.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 7
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 8
-        self.triangle_backing.push( GfxTriangleVertex { position: [  2.0, 7.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 9
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -4.0, -4.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 10
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, -4.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 11
-        self.triangle_backing.push( GfxTriangleVertex { position: [  4.0, -4.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 12
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, -11.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 13
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, -11.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 14
-        self.triangle_backing.push( GfxTriangleVertex { position: [  2.0, -11.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 15
-
-
-
-        // left wing, starting with forwardmost point
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -3.0, 3.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 16
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -6.0, -1.0 ], color: [ 0.25, 0.25, 0.25, 1.0 ] }); // 17
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -12.0, -5.0 ], color: [ 0.4, 0.4, 0.4, 1.0 ] }); // 18
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -12.0, -7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 19
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -11.0, -8.0 ], color: [ 0.6, 0.6, 0.6, 1.0 ] }); // 20
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -2.9, -7.0 ], color: [ 0.65, 0.65, 0.65, 1.0 ] }); // 21 
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, -0.0 ], color: [ 0.7, 0.7, 0.7, 1.0 ] }); // 22 
-        // right wing, starting with forwardmost point
-        self.triangle_backing.push( GfxTriangleVertex { position: [  3.0, 3.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 23
-        self.triangle_backing.push( GfxTriangleVertex { position: [  6.0, -1.0 ], color: [ 0.25, 0.25, 0.25, 1.0 ] }); // 24 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  12.0, -5.0 ], color: [ 0.4, 0.4, 0.4, 1.0 ] }); // 25 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  12.0, -7.0 ], color: [ 0.6, 0.6, 0.6, 1.0 ] }); // 26 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  11.0, -8.0 ], color: [ 0.6, 0.6, 0.6, 1.0 ] }); // 27
-        self.triangle_backing.push( GfxTriangleVertex { position: [  2.9, -7.0 ], color: [ 0.65, 0.65, 0.65, 1.0 ] }); // 28 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  2.0, -0.0 ], color: [ 0.7, 0.7, 0.7, 1.0 ] }); // 29 
-
-        // cockpit
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 8.5 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 30 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  1.3, 4.6 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 31 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 5.5 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 32 
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -1.3, 4.6 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 33 
-      
-        // left middle window
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -0.2, 5.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 34 
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -1.4, 4.2 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 35 
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -1.5, 3.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 36 
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -0.9, 2.8 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 37 
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -0.8, 3.7 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 38 
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -0.3, 4.2 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 39 
-        
-        // left rear window
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -1.5, 2.8 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 40 
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -1.3, 1.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 41 
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, 1.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 42 
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -0.9, 2.5 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 43 
-
-        // right middle window
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.2, 5.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 44 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  1.4, 4.2 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 45 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  1.5, 3.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 46 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.9, 2.8 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 47 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.8, 3.7 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 48 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.3, 4.2 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 49 
-        
-        // right rear window
-        self.triangle_backing.push( GfxTriangleVertex { position: [  1.5, 2.8 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 50 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  1.3, 1.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 51 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  1.0, 1.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 52 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.9, 2.5 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 53 
-
-        // tail
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, -6.0 ], color: [ 0.8, 0.8, 0.8, 1.0 ] }); // 54 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.5, -8.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 55 
-        self.triangle_backing.push( GfxTriangleVertex { position: [  0.0, -13.0 ], color: [ 0.8, 0.8, 0.8, 1.0 ] }); // 56 
-        self.triangle_backing.push( GfxTriangleVertex { position: [ -0.5, -8.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
-        
-        let mut indices = Vec::new();
-
-        // fuselage
-        indices.push((start_vert as u16)+0); // nose cone
-        indices.push((start_vert as u16)+1);
-        indices.push((start_vert as u16)+2);
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+2);
-        indices.push((start_vert as u16)+3);
-
-        
-        indices.push((start_vert as u16)+4); // forward fuselage left
-        indices.push((start_vert as u16)+7);
-        indices.push((start_vert as u16)+8);
-
-        indices.push((start_vert as u16)+4);
-        indices.push((start_vert as u16)+5);
-        indices.push((start_vert as u16)+8);
-
-        indices.push((start_vert as u16)+5); // forward fuselage right
-        indices.push((start_vert as u16)+6);
-        indices.push((start_vert as u16)+8);
-
-        indices.push((start_vert as u16)+6);
-        indices.push((start_vert as u16)+8);
-        indices.push((start_vert as u16)+9);
-
-        indices.push((start_vert as u16)+7); // middle fuselage left
-        indices.push((start_vert as u16)+10);
-        indices.push((start_vert as u16)+11);
-
-        indices.push((start_vert as u16)+7);
-        indices.push((start_vert as u16)+8);
-        indices.push((start_vert as u16)+11);
-
-        indices.push((start_vert as u16)+8); // middle fuselage right
-        indices.push((start_vert as u16)+9);
-        indices.push((start_vert as u16)+11);
-
-        indices.push((start_vert as u16)+9);
-        indices.push((start_vert as u16)+11);
-        indices.push((start_vert as u16)+12);
-
-        indices.push((start_vert as u16)+10); // aft fuselage left
-        indices.push((start_vert as u16)+13);
-        indices.push((start_vert as u16)+14);
-       
-        indices.push((start_vert as u16)+10);
-        indices.push((start_vert as u16)+11);
-        indices.push((start_vert as u16)+14);
-
-        indices.push((start_vert as u16)+11); // aft fuselage right
-        indices.push((start_vert as u16)+12);
-        indices.push((start_vert as u16)+14);
-        
-        indices.push((start_vert as u16)+12);
-        indices.push((start_vert as u16)+14);
-        indices.push((start_vert as u16)+15);
-
-        // left wing
-        
-        indices.push((start_vert as u16)+17);
-        indices.push((start_vert as u16)+16);
-        indices.push((start_vert as u16)+22);
-        
-        indices.push((start_vert as u16)+17);
-        indices.push((start_vert as u16)+22);
-        indices.push((start_vert as u16)+21);
-        
-        indices.push((start_vert as u16)+17);
-        indices.push((start_vert as u16)+21);
-        indices.push((start_vert as u16)+20);
-        
-        indices.push((start_vert as u16)+17);
-        indices.push((start_vert as u16)+20);
-        indices.push((start_vert as u16)+19);
-        
-        indices.push((start_vert as u16)+17);
-        indices.push((start_vert as u16)+19);
-        indices.push((start_vert as u16)+18);
-        // right wing
-        indices.push((start_vert as u16)+24);
-        indices.push((start_vert as u16)+23);
-        indices.push((start_vert as u16)+29);
-         
-        indices.push((start_vert as u16)+24);
-        indices.push((start_vert as u16)+29);
-        indices.push((start_vert as u16)+28);
-        
-        indices.push((start_vert as u16)+24);
-        indices.push((start_vert as u16)+28);
-        indices.push((start_vert as u16)+27);
-        
-        indices.push((start_vert as u16)+24);
-        indices.push((start_vert as u16)+27);
-        indices.push((start_vert as u16)+26);
-        
-        indices.push((start_vert as u16)+24);
-        indices.push((start_vert as u16)+26);
-        indices.push((start_vert as u16)+25);
-
-        // cockpit
-        indices.push((start_vert as u16)+30);
-        indices.push((start_vert as u16)+31);
-        indices.push((start_vert as u16)+32);
-
-        indices.push((start_vert as u16)+32);
-        indices.push((start_vert as u16)+33);
-        indices.push((start_vert as u16)+30);
-
-        // left middle window 
-        indices.push((start_vert as u16)+35);
-        indices.push((start_vert as u16)+34);
-        indices.push((start_vert as u16)+39);
-        
-        indices.push((start_vert as u16)+35);
-        indices.push((start_vert as u16)+39);
-        indices.push((start_vert as u16)+38);
-        
-        indices.push((start_vert as u16)+35);
-        indices.push((start_vert as u16)+36);
-        indices.push((start_vert as u16)+38);
-
-        indices.push((start_vert as u16)+36);
-        indices.push((start_vert as u16)+37);
-        indices.push((start_vert as u16)+38);
-        
-        // left rear window
-        indices.push((start_vert as u16)+40);
-        indices.push((start_vert as u16)+43);
-        indices.push((start_vert as u16)+41);
-
-        indices.push((start_vert as u16)+41);
-        indices.push((start_vert as u16)+42);
-        indices.push((start_vert as u16)+43);
-
-        // right middle window 
-        indices.push((start_vert as u16)+45);
-        indices.push((start_vert as u16)+44);
-        indices.push((start_vert as u16)+49);
-        
-        indices.push((start_vert as u16)+45);
-        indices.push((start_vert as u16)+49);
-        indices.push((start_vert as u16)+48);
-        
-        indices.push((start_vert as u16)+45);
-        indices.push((start_vert as u16)+46);
-        indices.push((start_vert as u16)+48);
-
-        indices.push((start_vert as u16)+46);
-        indices.push((start_vert as u16)+47);
-        indices.push((start_vert as u16)+48);
-        
-        // right rear window
-        indices.push((start_vert as u16)+50);
-        indices.push((start_vert as u16)+53);
-        indices.push((start_vert as u16)+51);
-
-        indices.push((start_vert as u16)+51);
-        indices.push((start_vert as u16)+52);
-        indices.push((start_vert as u16)+53);
-
-
-        // fin
-        indices.push((start_vert as u16)+54);
-        indices.push((start_vert as u16)+55);
-        indices.push((start_vert as u16)+56);
-
-        indices.push((start_vert as u16)+56);
-        indices.push((start_vert as u16)+57);
-        indices.push((start_vert as u16)+54);
-
-        self.add_indices(display, &indices, PrimitiveType::TrianglesList);
-        self.backing_changed = true;
-        return self.indices.len();
-    }
 
     fn circle(&mut self, display: &glium::Display, num_verts: u32, radius: f32) -> usize {
         let angle_step = (3.14159*2.0)/(num_verts as f32);
@@ -730,7 +731,7 @@ fn main() {
 
     gfx.program(1);
 
-    let mut player_ship = PlayerShip::new(gfx.ship(&display),
+    let mut player_ship = PlayerShip::new(PlayerShip::geometry(&mut gfx, &display),
                                           gfx.rotate(0.0),
                                           gfx.translate(0.0,0.0),
                                           gfx.origin(0.0,0.0));
