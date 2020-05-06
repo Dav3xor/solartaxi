@@ -7,9 +7,16 @@ use glium::index::PrimitiveType;
 
 use rand::prelude::*;
 use rand_distr::Exp1;
+use std::collections::HashMap;
 
-
-
+fn translate (coord: (f32, f32), angle: f32) -> (f32, f32) {
+    let tx = coord.0*angle.cos() - coord.1*angle.sin();
+    let ty = coord.0*angle.sin() + coord.1*angle.cos();
+    return (tx, ty);
+}
+fn add_trans(c1: (f32, f32), c2: (f32, f32)) -> (f32, f32) {
+    return (c1.0 + c2.0, c1.1 + c2.1);
+}
 #[derive(Copy, Clone)]
 enum GfxCommandTypes {
     LineDraw,
@@ -47,7 +54,6 @@ struct GfxCommand {
 }
 
 struct Gfx {
-    num_commands: usize,
     commands:          Vec< GfxCommand >,
     programs:          Vec< glium::Program >,
     indices:           Vec< glium::IndexBuffer<u16> >,
@@ -62,35 +68,216 @@ const ROTATE_LEFT: u32 = 1;
 const ROTATE_RIGHT: u32 = 2;
 const THRUST_ON: u32 = 4;
 
+const GEAR_CLOSED_ANGLE: f32 = 1.1;
+const FOOT_CLOSED_ANGLE: f32 = -3.14159/2.0;
+const GEAR_STEPS: u32 = 200;
+
+enum LandingGearState {
+    Up,
+    Down,
+    Opening(u32),
+    Closing(u32)
+}
+
 struct PlayerShip {
     position: [f32; 2],
     velocity: [f32; 2],
     angle: f32,
     flags: u32,
-    gfx_geometry: usize,
+    gear_state: LandingGearState,
+    ship_geometry: usize,
+    left_gear_geometry: usize,
+    right_gear_geometry: usize,
     gfx_angle: usize,
     gfx_translation: usize,
     gfx_origin: usize,
+    
+    gfx_left_gear_translation: usize,
+    gfx_right_gear_translation: usize,
+    gfx_left_gear_rotation: usize,
+    gfx_right_gear_rotation: usize,
+    
+    gfx_left_foot_translation: usize,
+    gfx_right_foot_translation: usize,
+    gfx_left_foot_rotation: usize,
+    gfx_right_foot_rotation: usize
 }
 
 impl PlayerShip {
-    fn new(gfx_geometry: usize,
-           gfx_angle: usize,
-           gfx_translation: usize,
-           gfx_origin: usize) -> PlayerShip {
+    fn new(gfx_geometry: Vec<usize>,
+           gfx_handles: std::collections::HashMap<String, usize>) -> PlayerShip {
         PlayerShip { position:      [0.0f32, 0.0],
                      velocity:      [0.0f32, 0.0],
                      angle: 0.0f32,
                      flags: 0,
-                     gfx_geometry: gfx_geometry,
-                     gfx_angle: gfx_angle,
-                     gfx_translation: gfx_translation,
-                     gfx_origin: gfx_origin }
+                     gear_state: LandingGearState::Down,
+                     ship_geometry: gfx_geometry[0],
+                     left_gear_geometry: gfx_geometry[1],
+                     right_gear_geometry: gfx_geometry[2],
+                    
+                     gfx_left_gear_translation: gfx_handles["left_gear_translation"],
+                     gfx_right_gear_translation: gfx_handles["right_gear_translation"],
+                     gfx_left_gear_rotation: gfx_handles["left_gear_rotation"],
+                     gfx_right_gear_rotation: gfx_handles["right_gear_rotation"],
+                     
+                     gfx_left_foot_translation: gfx_handles["left_foot_translation"],
+                     gfx_right_foot_translation: gfx_handles["right_foot_translation"],
+                     gfx_left_foot_rotation: gfx_handles["left_foot_rotation"],
+                     gfx_right_foot_rotation: gfx_handles["right_foot_rotation"],
+                     
+                     gfx_angle: gfx_handles["ship_rotation"],
+                     gfx_translation: gfx_handles["ship_translation"],
+                     gfx_origin: gfx_handles["ship_origin"] }
     }
 
-    fn geometry(gfx: &mut Gfx, display: &glium::Display) -> usize{
-        let start_vert = gfx.triangle_backing.len();
+    fn handles(gfx: &mut Gfx) -> std::collections::HashMap<String, usize> {
+        let mut handles = HashMap::new(); 
+
+        handles.insert("program".to_string(), gfx.program(1));
+
+        // left landing gear
+        handles.insert("left_gear_indices".to_string(), gfx.indices(5));
+        handles.insert("left_gear_rotation".to_string(), gfx.rotate(0.0));
+        handles.insert("left_gear_translation".to_string(), gfx.translate(-3.0,-7.0));
+        handles.insert("left_gear_draw".to_string(), gfx.triangle_draw());
         
+        // right landing gear
+        handles.insert("right_gear_indices".to_string(), gfx.indices(6));
+        handles.insert("right_gear_rotation".to_string(), gfx.rotate(0.0));
+        handles.insert("right_gear_translation".to_string(), gfx.translate(3.0,-7.0));
+        handles.insert("right_gear_draw".to_string(), gfx.triangle_draw());
+    
+        // left landing foot
+        handles.insert("left_foot_indices".to_string(), gfx.indices(7));
+        handles.insert("left_foot_rotation".to_string(), gfx.rotate(0.0));
+        handles.insert("left_foot_translation".to_string(), gfx.translate(-5.0,-12.5));
+        handles.insert("left_foot_draw".to_string(), gfx.triangle_draw());
+        
+        // right landing foot
+        handles.insert("right_foot_indices".to_string(), gfx.indices(8));
+        handles.insert("right_foot_rotation".to_string(), gfx.rotate(0.0));
+        handles.insert("right_foot_translation".to_string(), gfx.translate(5.0,-12.5));
+        handles.insert("right_foot_draw".to_string(), gfx.triangle_draw());
+        
+        // ship rotation/translate/origin
+        handles.insert("ship_rotation".to_string(), gfx.rotate(0.0));
+        handles.insert("ship_translation".to_string(), gfx.translate(0.0,0.0));
+        handles.insert("ship_origin".to_string(), gfx.origin(0.0,0.0));
+
+        handles.insert("ship_indices".to_string(), gfx.indices(4));
+        handles.insert("ship_draw".to_string(), gfx.triangle_draw());
+        
+        return handles;
+    } 
+
+    fn thrust_on(&mut self) {
+        self.flags |= THRUST_ON;
+    }
+
+    fn thrust_off(&mut self) {
+        self.flags &= !THRUST_ON;
+    }
+    
+    fn rotate_left(&mut self) {
+        self.flags |= ROTATE_LEFT;
+    }
+
+    fn rotate_right(&mut self) {
+        self.flags |= ROTATE_RIGHT;
+    }
+
+    fn rotate_off(&mut self) {
+        self.flags &= !(ROTATE_LEFT+ROTATE_RIGHT);
+    }
+    fn cycle_gear(&mut self) {
+        println!("xxx");
+        match self.gear_state {
+            LandingGearState::Opening (mut state) => {
+                println!("===== 1");
+                self.gear_state = LandingGearState::Closing(state);
+            },
+            LandingGearState::Closing (mut state) => {
+                println!("===== 2");
+                self.gear_state = LandingGearState::Opening(state); 
+            },
+            LandingGearState::Up => {
+                println!("===== 3");
+                self.gear_state = LandingGearState::Opening(0);
+            },
+            LandingGearState::Down => {
+                println!("===== 4");
+                self.gear_state = LandingGearState::Closing(GEAR_STEPS-1);
+            }
+        }
+    }
+
+    fn tick(&mut self, gfx: &mut Gfx) {
+        let mut gear_angle = 0.0f32;
+        let mut foot_angle = 0.0f32;
+
+        if self.flags & ROTATE_LEFT != 0 {
+            self.angle += 0.01;
+        } else if self.flags & ROTATE_RIGHT != 0 {
+            self.angle -= 0.01;
+        }
+
+        match self.gear_state {
+            LandingGearState::Opening(mut state) => {
+                state += 1;
+                if state >= GEAR_STEPS {
+                    self.gear_state = LandingGearState::Down;
+                } else {
+                    self.gear_state = LandingGearState::Opening(state);
+                }
+                foot_angle = FOOT_CLOSED_ANGLE - (state as f32)*(FOOT_CLOSED_ANGLE/(GEAR_STEPS as f32));
+                gear_angle = GEAR_CLOSED_ANGLE - (state as f32)*(GEAR_CLOSED_ANGLE/(GEAR_STEPS as f32));
+            },
+            LandingGearState::Closing(mut state) => {
+                state -= 1;
+                if state == 0 {
+                    self.gear_state = LandingGearState::Up;
+                } else {
+                    self.gear_state = LandingGearState::Closing(state);
+                }
+
+                foot_angle = FOOT_CLOSED_ANGLE - (state as f32)*(FOOT_CLOSED_ANGLE/(GEAR_STEPS as f32));
+                gear_angle = GEAR_CLOSED_ANGLE - (state as f32)*(GEAR_CLOSED_ANGLE/(GEAR_STEPS as f32));
+            },
+            LandingGearState::Up => {
+                foot_angle = FOOT_CLOSED_ANGLE;
+                gear_angle = GEAR_CLOSED_ANGLE;
+            },
+            LandingGearState::Down => {
+                foot_angle = 0.0;
+                gear_angle = 0.0;
+            }
+        }
+
+        gfx.change_translation(self.gfx_left_gear_translation, 
+                               translate ((-3.0, -7.0), self.angle));
+        gfx.change_translation(self.gfx_right_gear_translation, 
+                               translate ((3.0, -7.0), self.angle));
+
+        gfx.change_translation(self.gfx_left_foot_translation, 
+                               add_trans(translate ((-3.0, -7.0), self.angle),
+                                         translate((-2.0, -5.5), self.angle-gear_angle)));
+        gfx.change_translation(self.gfx_right_foot_translation, 
+                               add_trans(translate ((3.0, -7.0), self.angle),
+                                         translate((2.0, -5.5), self.angle+gear_angle)));
+
+        gfx.change_rotation(self.gfx_left_gear_rotation, self.angle-gear_angle);
+        gfx.change_rotation(self.gfx_right_gear_rotation, self.angle+gear_angle);
+        
+        gfx.change_rotation(self.gfx_left_foot_rotation, self.angle-foot_angle);
+        gfx.change_rotation(self.gfx_right_foot_rotation, self.angle+foot_angle);
+        
+        gfx.change_rotation(self.gfx_angle, self.angle);
+    }
+    
+    fn geometry(gfx: &mut Gfx, display: &glium::Display) -> Vec<usize> {
+        let start_vert = gfx.triangle_backing.len();
+        let mut geometry_ids = Vec::with_capacity(5); 
+
         // fuselage, top to bottom... tip to tail
         gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 19.0 ], color: [ 0.6, 0.5, 0.5, 1.0 ] }); // 0  nosecone
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, 16.0 ], color: [ 0.3, 0.25, 0.2, 1.0 ] }); // 1
@@ -141,7 +328,7 @@ impl PlayerShip {
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.5, 3.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 36 
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.9, 2.8 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 37 
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.8, 3.7 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 38 
-        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.3, 4.2 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 39 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.3, 4.2 ], color: [ 0.12, 0.12, 0.12, 1.0 ] }); // 39 
         
         // left rear window
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.5, 2.8 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 40 
@@ -342,46 +529,154 @@ impl PlayerShip {
         indices.push((start_vert as u16)+54);
 
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
+
+        geometry_ids.push(gfx.indices.len()-1);
+
+        // left landing gear leg
+        let mut indices = Vec::new();
+        let start_vert = gfx.triangle_backing.len();
+        
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 0.0, 0.0 ], color: [ 0.05, 0.1, 0.1, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 1.0, 0.0 ], color: [ 0.1, 0.15, 0.15, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 1.0, -1.0 ], color: [ 0.2, 0.3, 0.3, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.8, -6.0 ], color: [ 0.1, 0.15, 0.15, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.2, -6.0 ], color: [ 0.05, 0.1, 0.1, 1.0 ] }); // 57 
+
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+1);
+        indices.push((start_vert as u16)+2);
+
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u16)+3);
+        
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u16)+4);
+        
+        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
+        
+        geometry_ids.push(gfx.indices.len()-1);
+        
+        // right landing gear leg
+        let mut indices = Vec::new();
+        let start_vert = gfx.triangle_backing.len();
+        
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 0.0, 0.0 ], color: [ 0.05, 0.1, 0.1, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, 0.0 ], color: [ 0.1, 0.15, 0.15, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, -1.0 ], color: [ 0.2, 0.3, 0.3, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 1.8, -6.0 ], color: [ 0.1, 0.15, 0.15, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 2.2, -6.0 ], color: [ 0.05, 0.1, 0.1, 1.0 ] }); // 57 
+        
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+1);
+        indices.push((start_vert as u16)+2);
+
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u16)+3);
+        
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u16)+4);
+        
+        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
+        
+        geometry_ids.push(gfx.indices.len()-1);
+        
+        
+        // left gear foot
+        let mut indices = Vec::new();
+        let start_vert = gfx.triangle_backing.len();
+        
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 0.0,  0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 1.0, 0.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 1.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+1);
+        indices.push((start_vert as u16)+2);
+        
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u16)+3);
+        
+        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
+        
+        geometry_ids.push(gfx.indices.len()-1);
+        
+        // right gear foot
+        let mut indices = Vec::new();
+        let start_vert = gfx.triangle_backing.len();
+        
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 0.0, 0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, 0.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [  2.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+1);
+        indices.push((start_vert as u16)+2);
+        
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u16)+3);
+        
+        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
+        
+        geometry_ids.push(gfx.indices.len()-1);
+
+        
+        
+        
         gfx.backing_changed = true;
-        return gfx.indices.len()-1;
+        return geometry_ids;
     }
 
-    fn thrust_on(&mut self) {
-        self.flags |= THRUST_ON;
-    }
-
-    fn thrust_off(&mut self) {
-        self.flags &= !THRUST_ON;
-    }
-    
-    fn rotate_left(&mut self) {
-        self.flags |= ROTATE_LEFT;
-    }
-
-    fn rotate_right(&mut self) {
-        self.flags |= ROTATE_RIGHT;
-    }
-
-    fn rotate_off(&mut self) {
-        self.flags &= !(ROTATE_LEFT+ROTATE_RIGHT);
-    }
-
-    fn tick(&mut self, gfx: &mut Gfx) {
-        if self.flags & ROTATE_LEFT != 0 {
-            self.angle += 0.01;
-        } else if self.flags & ROTATE_RIGHT != 0 {
-            self.angle -= 0.01;
-        }
-        gfx.change_rotation(self.gfx_angle, self.angle);
-    }
 
 }
-
+        
 impl GfxCommand {
     fn noop() -> GfxCommand {
         GfxCommand { flags: 0,
                      command: GfxCommandTypes::NoOp } 
     }
+
+    fn print(&mut self) {
+        match self.command {
+            GfxCommandTypes::LineDraw => {
+                println!("line draw");
+            },
+            GfxCommandTypes::TriangleDraw => {
+                println!("triangle draw");
+            },
+            GfxCommandTypes::NoOp               => { 
+                println!("no op");
+            },
+            GfxCommandTypes::Indices(index)     =>  { 
+                println!("indices {0}", index);
+            },
+            GfxCommandTypes::Program(index)     =>  { 
+                println!("program {0}", index);
+            },
+            GfxCommandTypes::Rotate(angle)      => { 
+                println!("rotate {0}", angle);
+            },
+            GfxCommandTypes::Scale(scale)       => { 
+                println!("scale {0}", scale);
+            },
+            GfxCommandTypes::Translate { x, y } =>  { 
+                println!("translate {0} {1}", x, y);
+            },
+            GfxCommandTypes::Origin { x, y }    =>  { 
+                println!("no op {0} {1}", x, y);
+            }
+        }
+    }
+
+
+
 }
 
 impl Gfx {
@@ -397,7 +692,6 @@ impl Gfx {
 
         Gfx { line_vertices:     line_vertices,
               triangle_vertices: triangle_vertices,
-              num_commands:      0,
               programs:          programs,
               indices:           indices,
               line_backing:      line_backing,
@@ -428,36 +722,31 @@ impl Gfx {
     
     fn translate(&mut self, x: f32, y: f32) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Translate { x:x, y:y }});
-        self.num_commands += 1;
-        return self.num_commands - 1;
+        return self.commands.len() - 1;
     }
     
-    fn change_translation(&mut self, id: usize, x: f32, y: f32) {
-        self.commands[id].command = GfxCommandTypes::Translate { x:x, y:y };
+    fn change_translation(&mut self, id: usize, trans: (f32, f32)) {
+        self.commands[id].command = GfxCommandTypes::Translate { x:trans.0, y:trans.1 };
     }
     
     fn origin(&mut self, x: f32, y: f32) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Origin { x:x, y:y }});
-        self.num_commands += 1;
-        return self.num_commands - 1;
+        return self.commands.len() - 1;
     }
     
     fn line_draw(&mut self) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::LineDraw });
-        self.num_commands += 1;
-        return self.num_commands - 1;
+        return self.commands.len() - 1;
     }
     
     fn triangle_draw(&mut self) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::TriangleDraw });
-        self.num_commands += 1;
-        return self.num_commands - 1;
+        return self.commands.len() - 1;
     }
     
     fn indices(&mut self, indices: usize) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Indices (indices)});
-        self.num_commands += 1;
-        return self.num_commands - 1;
+        return self.commands.len() - 1;
     }
 
     fn run(&mut self, display: &glium::Display) {
@@ -729,15 +1018,9 @@ fn main() {
     gfx.indices(3);
     gfx.line_draw();
 
-    gfx.program(1);
 
     let mut player_ship = PlayerShip::new(PlayerShip::geometry(&mut gfx, &display),
-                                          gfx.rotate(0.0),
-                                          gfx.translate(0.0,0.0),
-                                          gfx.origin(0.0,0.0));
-    gfx.indices(4);
-    gfx.triangle_draw();
-    
+                                          PlayerShip::handles(&mut gfx));
     gfx.run(&display);
 
     // the main loop
@@ -754,6 +1037,10 @@ fn main() {
                     return;
                 },
                 glutin::event::WindowEvent::KeyboardInput { device_id, input, is_synthetic  } => {
+                    if input.scancode == 34 && input.state == glutin::event::ElementState::Released {
+                        player_ship.cycle_gear();
+                    }
+
                     if input.state == glutin::event::ElementState::Released {
                         player_ship.rotate_off();
                     } else if input.scancode == 105 && input.state == glutin::event::ElementState::Pressed {
