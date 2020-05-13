@@ -5,18 +5,22 @@ extern crate glium;
 use glium::{glutin, Surface};
 use glium::index::PrimitiveType;
 
-use rand::prelude::*;
-use rand_distr::Exp1;
 use std::collections::HashMap;
 
-fn translate (coord: (f32, f32), angle: f32) -> (f32, f32) {
+fn rotate (coord: (f32, f32), angle: f32) -> (f32, f32) {
     let tx = coord.0*angle.cos() - coord.1*angle.sin();
     let ty = coord.0*angle.sin() + coord.1*angle.cos();
     return (tx, ty);
 }
-fn add_trans(c1: (f32, f32), c2: (f32, f32)) -> (f32, f32) {
+fn add_points(c1: (f32, f32), c2: (f32, f32)) -> (f32, f32) {
     return (c1.0 + c2.0, c1.1 + c2.1);
 }
+
+fn get_distance(c1: (f32, f32), c2: (f32,f32)) -> f32 {
+    return ((c1.0-c2.0).powf(2.0) + (c1.1-c2.1).powf(2.0)).sqrt();
+}
+
+
 #[derive(Copy, Clone)]
 enum GfxCommandTypes {
     LineDraw,
@@ -69,7 +73,7 @@ const ROTATE_RIGHT: u32 = 2;
 const THRUST_ON: u32 = 4;
 
 const GEAR_CLOSED_ANGLE: f32 = 1.1;
-const FOOT_CLOSED_ANGLE: f32 = -3.14159/2.0;
+const FOOT_CLOSED_ANGLE: f32 = -3.14159/2.0 + 0.45;
 const GEAR_STEPS: u32 = 200;
 
 enum LandingGearState {
@@ -78,10 +82,170 @@ enum LandingGearState {
     Opening(u32),
     Closing(u32)
 }
+struct Planet {
+    position: (f32, f32),
+    velocity: (f32, f32),
+    mass: f32,
+    size: f32,
+    hills_geometry: usize,
+    mountains_geometry: usize,
+    sky_geometry: usize,
+    horizon_geometry: usize,
+}
+
+impl Planet {
+    fn new(position: (f32, f32),
+           mass: f32,
+           size: f32,
+           gfx_geometry: std::collections::HashMap<String, usize>) -> Planet {
+        Planet { position:           position,
+                 velocity:           (0.0, 0.0),
+                 mass:               mass,
+                 size:               size,
+                 hills_geometry:     gfx_geometry["hills"],
+                 mountains_geometry: gfx_geometry["mountains"],
+                 sky_geometry:       gfx_geometry["sky"],
+                 horizon_geometry:   gfx_geometry["horizon"]
+        }
+    }
+
+    fn geometry(gfx: &mut Gfx, 
+                display: &glium::Display,
+                radius: f32) -> std::collections::HashMap<String, usize> {
+        let mut handles = HashMap::new(); 
+
+        handles.insert("horizon".to_string(),      Planet::circle(gfx, &display, 200, radius));
+        handles.insert("sky".to_string(),             Planet::sky(gfx, &display, radius, 8.0, 200));
+        handles.insert("mountains".to_string(), Planet::mountains(gfx, &display, tall_mountains, radius*0.3, 1000));
+        handles.insert("hills".to_string(),     Planet::mountains(gfx, &display, short_mountains, radius*0.35, 300));
+    
+        // draw sky
+        gfx.program(1);
+        gfx.translate(0.0,0.0);
+        gfx.indices(handles["sky"]);
+        gfx.triangle_draw();
+
+        // tall mountains
+        gfx.translate(0.0,radius - (0.3 * radius));
+        gfx.indices(handles["mountains"]);
+        gfx.triangle_draw();
+
+        // hills
+        gfx.translate(0.0,radius - (0.35 * radius));
+        gfx.indices(handles["hills"]);
+        gfx.triangle_draw();
+
+        gfx.program(0);
+        gfx.translate(0.0, 0.0);
+        gfx.indices(handles["horizon"]);
+        gfx.line_draw();
+        
+        return handles;
+    }
+
+    fn circle(gfx: &mut Gfx, 
+              display: &glium::Display, 
+              num_verts: u32, 
+              radius: f32) -> usize {
+        let angle_step = (3.14159*2.0)/(num_verts as f32);
+        let mut indices = Vec::new();
+        let start_vert = gfx.line_backing.len();
+        for i in 0..num_verts {
+            let angle = (i as f32)*angle_step;
+            gfx.line_backing.push(GfxLineVertex { position: [ angle.sin()*radius,
+                                                              angle.cos()*radius ] });
+            indices.push((start_vert as u16)+(i as u16));
+        }
+        gfx.backing_changed = true;
+        return gfx.add_indices(display, &indices, PrimitiveType::LineLoop);
+    }
+
+    fn sky(gfx: &mut Gfx,
+           display: &glium::Display, 
+           inner_radius: f32,
+           height: f32,
+           num_divisions: u32) -> usize {
+        let angle_step = (3.14159*2.0)/(num_divisions as f32);
+        let mut indices = Vec::new();
+        let start_vert = gfx.triangle_backing.len();
+        for i in 0..(num_divisions) {
+            let angle = (i as f32)*angle_step;
+            gfx.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
+                                                                       angle.cos()*(inner_radius+height) ],
+                                                           color:    [0.1, 0.2, 0.5, 1.0]});
+
+            gfx.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*inner_radius,
+                                                                       angle.cos()*inner_radius ],
+                                                           color:    [0.3, 0.4, 0.5, 1.0]});
+            indices.push((start_vert as u16)+(i as u16)*2);
+            indices.push((start_vert as u16)+(i as u16)*2+1);
+        }
+        indices.push(start_vert as u16);
+        indices.push((start_vert as u16)+1);
+        let start_vert = gfx.triangle_backing.len();
+        for i in 0..(num_divisions) {
+            let angle = (i as f32)*angle_step;
+            gfx.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+(height*1.8)),
+                                                                       angle.cos()*(inner_radius+(height*1.8)) ],
+                                                           color:    [0.0, 0.0, 0.0, 1.0]});
+            gfx.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
+                                                                       angle.cos()*(inner_radius+height) ],
+                                                           color:    [0.1, 0.2, 0.5, 1.0]});
+
+            indices.push((start_vert as u16)+(i as u16)*2);
+            indices.push((start_vert as u16)+(i as u16)*2+1);
+        }
+        indices.push(start_vert as u16);
+        indices.push((start_vert as u16)+1);
+        gfx.backing_changed = true;
+        return gfx.add_indices(display, &indices, PrimitiveType::TriangleStrip);
+    }
+
+
+    fn mountains(gfx: &mut Gfx, 
+                 display: &glium::Display, 
+                 height_fn: fn(f32) -> f32,
+                 inner_radius: f32, 
+                 num_divisions: u32 ) -> usize {
+        let angle_step = (3.14159*2.0)/(num_divisions as f32);
+        let mut indices = Vec::new();
+        let start_vert = gfx.triangle_backing.len();
+        for i in 0..(num_divisions) {
+
+            let angle  = (i as f32)*angle_step;
+            let height = height_fn(angle);
+            gfx.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
+                                                                       angle.cos()*(inner_radius+height) ],
+                                                           color:    [0.05, 0.05, 0.1, 1.0]});
+
+            gfx.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*inner_radius,
+                                                                       angle.cos()*inner_radius ],
+                                                        color:    [0.2, 0.2, 0.5, 1.0]});
+            indices.push((start_vert as u16)+(i as u16)*2);
+            indices.push((start_vert as u16)+(i as u16)*2+1);
+        }
+        indices.push(start_vert as u16);
+        indices.push((start_vert as u16)+1);
+        gfx.backing_changed = true;
+        return gfx.add_indices(display, &indices, PrimitiveType::TriangleStrip);
+    }
+
+}
+ 
+
+fn tall_mountains(angle: f32) -> f32 {
+    let max_height = 3.0f32;
+    return (max_height*1.2) + (max_height * (angle*83.0).sin()*0.3) + (max_height * (angle*61.0).cos()*0.3);
+}
+
+fn short_mountains(angle: f32) -> f32 {
+    let max_height = 1.0f32;
+    return (max_height*1.25) + (max_height * (angle*59.0).sin()*0.7) + (max_height * (angle*29.0).cos()*0.7);
+}
 
 struct PlayerShip {
-    position: [f32; 2],
-    velocity: [f32; 2],
+    position: (f32, f32),
+    velocity: (f32, f32),
     angle: f32,
     flags: u32,
     gear_state: LandingGearState,
@@ -90,7 +254,6 @@ struct PlayerShip {
     right_gear_geometry: usize,
     gfx_angle: usize,
     gfx_translation: usize,
-    gfx_origin: usize,
     
     gfx_left_gear_translation: usize,
     gfx_right_gear_translation: usize,
@@ -104,16 +267,17 @@ struct PlayerShip {
 }
 
 impl PlayerShip {
-    fn new(gfx_geometry: Vec<usize>,
-           gfx_handles: std::collections::HashMap<String, usize>) -> PlayerShip {
-        PlayerShip { position:      [0.0f32, 0.0],
-                     velocity:      [0.0f32, 0.0],
+    fn new(gfx_handles: std::collections::HashMap<String, usize>) -> PlayerShip {
+
+
+        PlayerShip { position:      (0.0, 1000.0),
+                     velocity:      (0.0, 0.0),
                      angle: 0.0f32,
                      flags: 0,
                      gear_state: LandingGearState::Down,
-                     ship_geometry: gfx_geometry[0],
-                     left_gear_geometry: gfx_geometry[1],
-                     right_gear_geometry: gfx_geometry[2],
+                     ship_geometry: gfx_handles["fuselage"],
+                     left_gear_geometry: gfx_handles["left_gear"],
+                     right_gear_geometry: gfx_handles["right_gear"],
                     
                      gfx_left_gear_translation: gfx_handles["left_gear_translation"],
                      gfx_right_gear_translation: gfx_handles["right_gear_translation"],
@@ -127,48 +291,26 @@ impl PlayerShip {
                      
                      gfx_angle: gfx_handles["ship_rotation"],
                      gfx_translation: gfx_handles["ship_translation"],
-                     gfx_origin: gfx_handles["ship_origin"] }
+                     //gfx_origin: gfx_handles["ship_origin"]
+        }
     }
 
-    fn handles(gfx: &mut Gfx) -> std::collections::HashMap<String, usize> {
-        let mut handles = HashMap::new(); 
-
-        handles.insert("program".to_string(), gfx.program(1));
-
-        // left landing gear
-        handles.insert("left_gear_indices".to_string(), gfx.indices(5));
-        handles.insert("left_gear_rotation".to_string(), gfx.rotate(0.0));
-        handles.insert("left_gear_translation".to_string(), gfx.translate(-3.0,-7.0));
-        handles.insert("left_gear_draw".to_string(), gfx.triangle_draw());
-        
-        // right landing gear
-        handles.insert("right_gear_indices".to_string(), gfx.indices(6));
-        handles.insert("right_gear_rotation".to_string(), gfx.rotate(0.0));
-        handles.insert("right_gear_translation".to_string(), gfx.translate(3.0,-7.0));
-        handles.insert("right_gear_draw".to_string(), gfx.triangle_draw());
-    
-        // left landing foot
-        handles.insert("left_foot_indices".to_string(), gfx.indices(7));
-        handles.insert("left_foot_rotation".to_string(), gfx.rotate(0.0));
-        handles.insert("left_foot_translation".to_string(), gfx.translate(-5.0,-12.5));
-        handles.insert("left_foot_draw".to_string(), gfx.triangle_draw());
-        
-        // right landing foot
-        handles.insert("right_foot_indices".to_string(), gfx.indices(8));
-        handles.insert("right_foot_rotation".to_string(), gfx.rotate(0.0));
-        handles.insert("right_foot_translation".to_string(), gfx.translate(5.0,-12.5));
-        handles.insert("right_foot_draw".to_string(), gfx.triangle_draw());
-        
-        // ship rotation/translate/origin
-        handles.insert("ship_rotation".to_string(), gfx.rotate(0.0));
-        handles.insert("ship_translation".to_string(), gfx.translate(0.0,0.0));
-        handles.insert("ship_origin".to_string(), gfx.origin(0.0,0.0));
-
-        handles.insert("ship_indices".to_string(), gfx.indices(4));
-        handles.insert("ship_draw".to_string(), gfx.triangle_draw());
-        
-        return handles;
-    } 
+    fn gravity(&mut self, planet: &Planet)
+    {
+        let distance = get_distance(self.position, planet.position);
+        let angle    = f32::atan2(self.position.0 - planet.position.0, 
+                                  self.position.1 - planet.position.1);
+        if distance > (planet.size-0.1) {
+            let pull = (1.0/(distance.powf(2.0))) * 8000.0;
+            self.velocity.0 -= angle.sin() * pull;
+            self.velocity.1 -= angle.cos() * pull;
+        } else {
+            self.velocity.0 = 0.0;
+            self.velocity.1 = 0.0;
+            self.position.0 = angle.sin()*planet.size;
+            self.position.1 = angle.cos()*planet.size;
+        }
+    }
 
     fn thrust_on(&mut self) {
         self.flags |= THRUST_ON;
@@ -190,22 +332,17 @@ impl PlayerShip {
         self.flags &= !(ROTATE_LEFT+ROTATE_RIGHT);
     }
     fn cycle_gear(&mut self) {
-        println!("xxx");
         match self.gear_state {
-            LandingGearState::Opening (mut state) => {
-                println!("===== 1");
+            LandingGearState::Opening (state) => {
                 self.gear_state = LandingGearState::Closing(state);
             },
-            LandingGearState::Closing (mut state) => {
-                println!("===== 2");
+            LandingGearState::Closing (state) => {
                 self.gear_state = LandingGearState::Opening(state); 
             },
             LandingGearState::Up => {
-                println!("===== 3");
                 self.gear_state = LandingGearState::Opening(0);
             },
             LandingGearState::Down => {
-                println!("===== 4");
                 self.gear_state = LandingGearState::Closing(GEAR_STEPS-1);
             }
         }
@@ -214,11 +351,18 @@ impl PlayerShip {
     fn tick(&mut self, gfx: &mut Gfx) {
         let mut gear_angle = 0.0f32;
         let mut foot_angle = 0.0f32;
+        
+        self.position = add_points(self.position, self.velocity);
 
         if self.flags & ROTATE_LEFT != 0 {
             self.angle += 0.01;
         } else if self.flags & ROTATE_RIGHT != 0 {
             self.angle -= 0.01;
+        }
+
+        if self.flags & THRUST_ON != 0 {
+            self.velocity.0 -= self.angle.sin()*0.01;
+            self.velocity.1 += self.angle.cos()*0.01;
         }
 
         match self.gear_state {
@@ -252,18 +396,18 @@ impl PlayerShip {
                 gear_angle = 0.0;
             }
         }
-
+        gfx.change_translation(self.gfx_translation,self.position);
         gfx.change_translation(self.gfx_left_gear_translation, 
-                               translate ((-3.0, -7.0), self.angle));
+                               rotate ((-3.0, -7.0), self.angle));
         gfx.change_translation(self.gfx_right_gear_translation, 
-                               translate ((3.0, -7.0), self.angle));
+                               rotate ((3.0, -7.0), self.angle));
 
         gfx.change_translation(self.gfx_left_foot_translation, 
-                               add_trans(translate ((-3.0, -7.0), self.angle),
-                                         translate((-2.0, -5.5), self.angle-gear_angle)));
+                               add_points(rotate((-3.0, -7.0), self.angle),
+                                         rotate((-2.0, -5.5), self.angle-gear_angle)));
         gfx.change_translation(self.gfx_right_foot_translation, 
-                               add_trans(translate ((3.0, -7.0), self.angle),
-                                         translate((2.0, -5.5), self.angle+gear_angle)));
+                               add_points(rotate((3.0, -7.0), self.angle),
+                                         rotate((2.0, -5.5), self.angle+gear_angle)));
 
         gfx.change_rotation(self.gfx_left_gear_rotation, self.angle-gear_angle);
         gfx.change_rotation(self.gfx_right_gear_rotation, self.angle+gear_angle);
@@ -274,9 +418,9 @@ impl PlayerShip {
         gfx.change_rotation(self.gfx_angle, self.angle);
     }
     
-    fn geometry(gfx: &mut Gfx, display: &glium::Display) -> Vec<usize> {
+    fn geometry(gfx: &mut Gfx, display: &glium::Display) -> std::collections::HashMap<String, usize> {
         let start_vert = gfx.triangle_backing.len();
-        let mut geometry_ids = Vec::with_capacity(5); 
+        let mut handles = HashMap::new(); 
 
         // fuselage, top to bottom... tip to tail
         gfx.triangle_backing.push( GfxTriangleVertex { position: [  0.0, 19.0 ], color: [ 0.6, 0.5, 0.5, 1.0 ] }); // 0  nosecone
@@ -530,7 +674,7 @@ impl PlayerShip {
 
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
 
-        geometry_ids.push(gfx.indices.len()-1);
+        handles.insert("fuselage".to_string(), gfx.indices.len()-1);
 
         // left landing gear leg
         let mut indices = Vec::new();
@@ -556,7 +700,7 @@ impl PlayerShip {
         
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
-        geometry_ids.push(gfx.indices.len()-1);
+        handles.insert("left_gear".to_string(), gfx.indices.len()-1);
         
         // right landing gear leg
         let mut indices = Vec::new();
@@ -582,14 +726,14 @@ impl PlayerShip {
         
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
-        geometry_ids.push(gfx.indices.len()-1);
+        handles.insert("right_gear".to_string(), gfx.indices.len()-1);
         
         
         // left gear foot
         let mut indices = Vec::new();
         let start_vert = gfx.triangle_backing.len();
         
-        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 0.0,  0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 0.0,  0.5 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 57 
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ 1.0, 0.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ 1.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
@@ -604,7 +748,7 @@ impl PlayerShip {
         
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
-        geometry_ids.push(gfx.indices.len()-1);
+        handles.insert("left_foot".to_string(), gfx.indices.len()-1);
         
         // right gear foot
         let mut indices = Vec::new();
@@ -625,13 +769,48 @@ impl PlayerShip {
         
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
-        geometry_ids.push(gfx.indices.len()-1);
+        handles.insert("right_foot".to_string(), gfx.indices.len()-1);
 
+        
+
+        handles.insert("program".to_string(), gfx.program(1));
+
+        // left landing gear
+        handles.insert("left_gear_indices".to_string(), gfx.indices(handles["left_gear"]));
+        handles.insert("left_gear_rotation".to_string(), gfx.rotate(0.0));
+        handles.insert("left_gear_translation".to_string(), gfx.translate(-3.0,-7.0));
+        handles.insert("left_gear_draw".to_string(), gfx.triangle_draw());
+        
+        // right landing gear
+        handles.insert("right_gear_indices".to_string(), gfx.indices(handles["right_gear"]));
+        handles.insert("right_gear_rotation".to_string(), gfx.rotate(0.0));
+        handles.insert("right_gear_translation".to_string(), gfx.translate(3.0,-7.0));
+        handles.insert("right_gear_draw".to_string(), gfx.triangle_draw());
+    
+        // left landing foot
+        handles.insert("left_foot_indices".to_string(), gfx.indices(handles["left_foot"]));
+        handles.insert("left_foot_rotation".to_string(), gfx.rotate(0.0));
+        handles.insert("left_foot_translation".to_string(), gfx.translate(-5.0,-12.5));
+        handles.insert("left_foot_draw".to_string(), gfx.triangle_draw());
+        
+        // right landing foot
+        handles.insert("right_foot_indices".to_string(), gfx.indices(handles["right_foot"]));
+        handles.insert("right_foot_rotation".to_string(), gfx.rotate(0.0));
+        handles.insert("right_foot_translation".to_string(), gfx.translate(5.0,-12.5));
+        handles.insert("right_foot_draw".to_string(), gfx.triangle_draw());
+        
+        // ship rotation/translate/origin
+        handles.insert("ship_rotation".to_string(), gfx.rotate(0.0));
+        handles.insert("ship_translation".to_string(), gfx.translate(0.0,0.0));
+        //handles.insert("ship_origin".to_string(), 0); //gfx.origin(0.0,0.0));
+
+        handles.insert("ship_indices".to_string(), gfx.indices(handles["fuselage"]));
+        handles.insert("ship_draw".to_string(), gfx.triangle_draw());
         
         
         
         gfx.backing_changed = true;
-        return geometry_ids;
+        return handles;
     }
 
 
@@ -688,7 +867,6 @@ impl Gfx {
         let line_backing = Vec::new();
         let triangle_backing = Vec::new();
         let commands = Vec::new();
-        let params = glium::DrawParameters { blend: glium::draw_parameters::Blend::alpha_blending(), .. Default::default() };
 
         Gfx { line_vertices:     line_vertices,
               triangle_vertices: triangle_vertices,
@@ -732,6 +910,9 @@ impl Gfx {
     fn origin(&mut self, x: f32, y: f32) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Origin { x:x, y:y }});
         return self.commands.len() - 1;
+    }
+    fn change_origin(&mut self, id: usize, x: f32, y: f32) {
+        self.commands[id].command = GfxCommandTypes::Origin { x:x, y:y };
     }
     
     fn line_draw(&mut self) -> usize {
@@ -790,6 +971,7 @@ impl Gfx {
                                         &uniform! {translation:  cur_translation, 
                                                    scale:        cur_scale, 
                                                    angle:        cur_angle,
+                                                   origin:       cur_origin,
                                                    aspect_ratio: aspect_ratio}, 
                                         &params).unwrap(); 
                         } 
@@ -805,6 +987,7 @@ impl Gfx {
                                         &uniform! {translation:  cur_translation, 
                                                    scale:        cur_scale, 
                                                    angle:        cur_angle,
+                                                   origin:       cur_origin,
                                                    aspect_ratio: aspect_ratio}, 
                                         &params).unwrap(); 
                         } 
@@ -823,118 +1006,19 @@ impl Gfx {
 
         target.finish().unwrap();
     }
-    fn add_program(&mut self, display: &glium::Display, vert_shader: &str, frag_shader: &str) {
+    fn add_program(&mut self, display: &glium::Display, vert_shader: &str, frag_shader: &str) -> usize {
         self.programs.push(program!(display, 
                                     140 => {vertex:vert_shader, fragment:frag_shader}).unwrap());
+        return self.programs.len() - 1;
     }
-    fn add_indices(&mut self, display: &glium::Display, indices: &[u16], primitive_type: PrimitiveType) {
+    fn add_indices(&mut self, display: &glium::Display, indices: &[u16], primitive_type: PrimitiveType) -> usize {
         self.indices.push(glium::IndexBuffer::new(display, 
                                                   primitive_type,
                                                   indices).unwrap());
+        return self.indices.len() - 1;
     }
-
-
-    fn circle(&mut self, display: &glium::Display, num_verts: u32, radius: f32) -> usize {
-        let angle_step = (3.14159*2.0)/(num_verts as f32);
-        let mut indices = Vec::new();
-        let start_vert = self.line_backing.len();
-        for i in 0..num_verts {
-            let angle = (i as f32)*angle_step;
-            self.line_backing.push(GfxLineVertex { position: [ angle.sin()*radius,
-                                                               angle.cos()*radius ] });
-            indices.push((start_vert as u16)+(i as u16));
-        }
-        self.add_indices(display, &indices, PrimitiveType::LineLoop);
-        self.backing_changed = true;
-        return 0;
-    }
-
-    fn sky(&mut self,
-           display: &glium::Display, 
-           inner_radius: f32,
-           height: f32,
-           num_divisions: u32) -> usize {
-        let angle_step = (3.14159*2.0)/(num_divisions as f32);
-        let mut indices = Vec::new();
-        let start_vert = self.triangle_backing.len();
-        for i in 0..(num_divisions) {
-            let angle = (i as f32)*angle_step;
-            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
-                                                                       angle.cos()*(inner_radius+height) ],
-                                                           color:    [0.1, 0.2, 0.5, 1.0]});
-
-            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*inner_radius,
-                                                                       angle.cos()*inner_radius ],
-                                                           color:    [0.3, 0.4, 0.5, 1.0]});
-            indices.push((start_vert as u16)+(i as u16)*2);
-            indices.push((start_vert as u16)+(i as u16)*2+1);
-        }
-        indices.push((start_vert as u16));
-        indices.push((start_vert as u16)+1);
-        let start_vert = self.triangle_backing.len();
-        for i in 0..(num_divisions) {
-            let angle = (i as f32)*angle_step;
-            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+(height*1.8)),
-                                                                       angle.cos()*(inner_radius+(height*1.8)) ],
-                                                           color:    [0.0, 0.0, 0.0, 1.0]});
-            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
-                                                                       angle.cos()*(inner_radius+height) ],
-                                                           color:    [0.1, 0.2, 0.5, 1.0]});
-
-            indices.push((start_vert as u16)+(i as u16)*2);
-            indices.push((start_vert as u16)+(i as u16)*2+1);
-        }
-        indices.push((start_vert as u16));
-        indices.push((start_vert as u16)+1);
-        self.add_indices(display, &indices, PrimitiveType::TriangleStrip);
-        self.backing_changed = true;
-        return 0;
-    }
-
-
-    fn mountains(&mut self, 
-                 display: &glium::Display, 
-                 height_fn: fn(f32) -> f32,
-                 inner_radius: f32, 
-                 num_divisions: u32 ) -> usize {
-        let angle_step = (3.14159*2.0)/(num_divisions as f32);
-        let mut indices = Vec::new();
-        let start_vert = self.triangle_backing.len();
-        for i in 0..(num_divisions) {
-
-            let angle = (i as f32)*angle_step;
-            let height_modifier: f32 = thread_rng().sample(Exp1);
-            //let height = (((height_modifier as f32) * max_height) / 10.0)+(max_height);
-            let height = height_fn(angle);
-            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
-                                                                       angle.cos()*(inner_radius+height) ],
-                                                           color:    [0.05, 0.05, 0.1, 1.0]});
-
-            self.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*inner_radius,
-                                                                       angle.cos()*inner_radius ],
-                                                        color:    [0.2, 0.2, 0.5, 1.0]});
-            indices.push((start_vert as u16)+(i as u16)*2);
-            indices.push((start_vert as u16)+(i as u16)*2+1);
-        }
-        indices.push((start_vert as u16));
-        indices.push((start_vert as u16)+1);
-        self.add_indices(display, &indices, PrimitiveType::TriangleStrip);
-        self.backing_changed = true;
-        return 0;
-    }
-
-}
- 
-
-fn tall_mountains(angle: f32) -> f32 {
-    let max_height = 3.0f32;
-    return (max_height*1.2) + (max_height * (angle*83.0).sin()*0.3) + (max_height * (angle*61.0).cos()*0.3);
 }
 
-fn short_mountains(angle: f32) -> f32 {
-    let max_height = 1.0f32;
-    return (max_height*1.25) + (max_height * (angle*59.0).sin()*0.7) + (max_height * (angle*29.0).cos()*0.7);
-}
 
 fn main() {
     let event_loop = glutin::event_loop::EventLoop::new();
@@ -987,40 +1071,24 @@ fn main() {
     let mut gfx = Gfx::new();
     let mut angle = 0.0f32;
 
-    gfx.mountains(&display, tall_mountains, 300.0, 1000);
-    gfx.mountains(&display, short_mountains, 350.0, 300);
-    gfx.sky(&display, 1000.0, 8.0, 200);
-    gfx.circle(&display, 400, 1000.0);
+
+    //gfx.mountains(&display, tall_mountains, 300.0, 1000);
+    //gfx.mountains(&display, short_mountains, 350.0, 300);
+    //gfx.sky(&display, 1000.0, 8.0, 200);
+    //gfx.circle(&display, 400, 1000.0);
 
     gfx.add_program(&display, linevertex140, linefragment140);
     gfx.add_program(&display, trivertex140, trifragment140);
     gfx.rotate(0.5);
-    gfx.scale(0.05);
+    gfx.scale(0.005);
+    gfx.origin(0.0,1000.0);
 
-    // draw sky
-    gfx.program(1);
-    gfx.translate(0.0,-1000.0);
-    gfx.indices(2);
-    gfx.triangle_draw();
+    let mut planet = Planet::new((0.0, 0.0),
+                                 1000.0,
+                                 1000.0,
+                                 Planet::geometry(&mut gfx, &display, 1000.0));
 
-    // tall mountains
-    gfx.translate(0.0,-300.0);
-    gfx.indices(0);
-    gfx.triangle_draw();
-
-    // hills
-    gfx.translate(0.0,-350.0);
-    gfx.indices(1);
-    gfx.triangle_draw();
-
-    gfx.program(0);
-    gfx.translate(0.0,-1000.0);
-    gfx.indices(3);
-    gfx.line_draw();
-
-
-    let mut player_ship = PlayerShip::new(PlayerShip::geometry(&mut gfx, &display),
-                                          PlayerShip::handles(&mut gfx));
+    let mut player_ship = PlayerShip::new(PlayerShip::geometry(&mut gfx, &display));
     gfx.run(&display);
 
     // the main loop
@@ -1036,17 +1104,20 @@ fn main() {
                     *control_flow = glutin::event_loop::ControlFlow::Exit;
                     return;
                 },
-                glutin::event::WindowEvent::KeyboardInput { device_id, input, is_synthetic  } => {
+                glutin::event::WindowEvent::KeyboardInput { input, is_synthetic, ..  } => {
                     if input.scancode == 34 && input.state == glutin::event::ElementState::Released {
                         player_ship.cycle_gear();
                     }
 
                     if input.state == glutin::event::ElementState::Released {
                         player_ship.rotate_off();
+                        player_ship.thrust_off();
                     } else if input.scancode == 105 && input.state == glutin::event::ElementState::Pressed {
                         player_ship.rotate_left();
                     } else if input.scancode == 106 && input.state == glutin::event::ElementState::Pressed {
                         player_ship.rotate_right();
+                    } else if input.scancode == 108 && input.state == glutin::event::ElementState::Pressed {
+                        player_ship.thrust_on();
                     }
                     println!("key: {0} {1} {2}", input.scancode, 
                                                  if input.state == glutin::event::ElementState::Pressed { "pressed" } else { "released" },
@@ -1059,7 +1130,9 @@ fn main() {
         
         angle += 0.0001;
         gfx.change_rotation(0,angle);
+        gfx.change_origin(2,player_ship.position.0, player_ship.position.1);
         player_ship.tick(&mut gfx);
+        player_ship.gravity(&planet);
         gfx.run(&mut display);
     });
 }
