@@ -76,6 +76,11 @@ const GEAR_CLOSED_ANGLE: f32 = 1.1;
 const FOOT_CLOSED_ANGLE: f32 = -3.14159/2.0 + 0.45;
 const GEAR_STEPS: u32 = 200;
 
+
+// GFX constants
+const GFX_SKIP: u32 = 1;
+
+
 enum LandingGearState {
     Up,
     Down,
@@ -250,6 +255,7 @@ struct PlayerShip {
     flags: u32,
     gear_state: LandingGearState,
     ship_geometry: usize,
+    exhaust_draw: usize,
     left_gear_geometry: usize,
     right_gear_geometry: usize,
     gfx_angle: usize,
@@ -276,6 +282,7 @@ impl PlayerShip {
                      flags: 0,
                      gear_state: LandingGearState::Down,
                      ship_geometry: gfx_handles["fuselage"],
+                     exhaust_draw: gfx_handles["exhaust_draw"],
                      left_gear_geometry: gfx_handles["left_gear"],
                      right_gear_geometry: gfx_handles["right_gear"],
                     
@@ -314,6 +321,7 @@ impl PlayerShip {
 
     fn thrust_on(&mut self) {
         self.flags |= THRUST_ON;
+
     }
 
     fn thrust_off(&mut self) {
@@ -331,6 +339,31 @@ impl PlayerShip {
     fn rotate_off(&mut self) {
         self.flags &= !(ROTATE_LEFT+ROTATE_RIGHT);
     }
+
+    fn turning_left(&self) -> bool {
+        if (self.flags & ROTATE_LEFT != 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    fn turning_right(&self) -> bool {
+        if (self.flags & ROTATE_RIGHT != 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    fn thrusting(&self) -> bool {
+        if (self.flags & THRUST_ON != 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     fn cycle_gear(&mut self) {
         match self.gear_state {
             LandingGearState::Opening (state) => {
@@ -363,7 +396,11 @@ impl PlayerShip {
         if self.flags & THRUST_ON != 0 {
             self.velocity.0 -= self.angle.sin()*0.01;
             self.velocity.1 += self.angle.cos()*0.01;
+            gfx.unskip(self.exhaust_draw);
+        } else {
+            gfx.skip(self.exhaust_draw);
         }
+
 
         match self.gear_state {
             LandingGearState::Opening(mut state) => {
@@ -676,6 +713,52 @@ impl PlayerShip {
 
         handles.insert("fuselage".to_string(), gfx.indices.len()-1);
 
+        // exhaust
+        let mut indices = Vec::new();
+        let start_vert = gfx.triangle_backing.len();
+        
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, -11.7 ], color: [ 1.0, 0.3, 0.0, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.7, -13.3 ], color: [ 1.0, 1.0, 0.1, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.4, -18.4 ], color: [ 0.0, 0.0, 0.0, 0.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.4, -13.5 ], color: [ 1.0, 1.0, 0.1, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ -0.7, -12.0 ], color: [ 1.0, 0.3, 0.0, 1.0 ] }); // 57 
+
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 2.0, -11.7 ], color: [ 1.0, 0.3, 0.0, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 2.7, -13.3 ], color: [ 1.0, 1.0, 0.1, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 2.4, -18.4 ], color: [ 0.0, 0.0, 0.0, 0.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 0.4, -13.5 ], color: [ 1.0, 1.0, 0.1, 1.0 ] }); // 57 
+        gfx.triangle_backing.push( GfxTriangleVertex { position: [ 0.7, -12.0 ], color: [ 1.0, 0.3, 0.0, 1.0 ] }); // 57 
+
+        // left exhaust 
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u16)+4);
+
+        indices.push((start_vert as u16)+0);
+        indices.push((start_vert as u16)+1);
+        indices.push((start_vert as u16)+3);
+
+        indices.push((start_vert as u16)+1);
+        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u16)+3);
+
+        // right exhaust
+        indices.push((start_vert as u16)+5);
+        indices.push((start_vert as u16)+8);
+        indices.push((start_vert as u16)+9);
+
+        indices.push((start_vert as u16)+5);
+        indices.push((start_vert as u16)+6);
+        indices.push((start_vert as u16)+8);
+
+        indices.push((start_vert as u16)+6);
+        indices.push((start_vert as u16)+7);
+        indices.push((start_vert as u16)+8);
+        
+        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
+        
+        handles.insert("exhaust".to_string(), gfx.indices.len()-1);
+        
         // left landing gear leg
         let mut indices = Vec::new();
         let start_vert = gfx.triangle_backing.len();
@@ -807,6 +890,8 @@ impl PlayerShip {
         handles.insert("ship_indices".to_string(), gfx.indices(handles["fuselage"]));
         handles.insert("ship_draw".to_string(), gfx.triangle_draw());
         
+        handles.insert("exhaust_indices".to_string(), gfx.indices(handles["exhaust"]));
+        handles.insert("exhaust_draw".to_string(), gfx.triangle_draw());
         
         
         gfx.backing_changed = true;
@@ -884,6 +969,14 @@ impl Gfx {
         return self.commands.len() - 1;
     }
 
+    fn skip(&mut self, id: usize) {
+        self.commands[id].flags |= GFX_SKIP;
+    }
+    
+    fn unskip(&mut self, id: usize) {
+        self.commands[id].flags &= !GFX_SKIP;
+    }
+
     fn rotate(&mut self, angle: f32) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Rotate ( angle )});
         return self.commands.len() - 1;
@@ -939,7 +1032,10 @@ impl Gfx {
         let mut cur_angle       = 0.0f32;
         let mut cur_indices     = 0usize;
         let params = glium::DrawParameters {
+            blend: glium::Blend::alpha_blending(),
+            multisampling: true,
             line_width: Some(2.0),
+
             ..Default::default()
         };
         if self.backing_changed {
@@ -960,46 +1056,48 @@ impl Gfx {
         
         target.clear_color(0.0, 0.0, 0.0, 0.0);
         for command in self.commands.iter() {
-            match command.command {
-                GfxCommandTypes::LineDraw => {
-                    match self.line_vertices {
-                        None => println!("No Line Vertices Set"),
-                        Some(ref vertices) => {
-                            target.draw(vertices, 
-                                        &self.indices[cur_indices], 
-                                        &self.programs[cur_program], 
-                                        &uniform! {translation:  cur_translation, 
-                                                   scale:        cur_scale, 
-                                                   angle:        cur_angle,
-                                                   origin:       cur_origin,
-                                                   aspect_ratio: aspect_ratio}, 
-                                        &params).unwrap(); 
+            if (command.flags & GFX_SKIP == 0) {
+                match command.command {
+                    GfxCommandTypes::LineDraw => {
+                        match self.line_vertices {
+                            None => println!("No Line Vertices Set"),
+                            Some(ref vertices) => {
+                                target.draw(vertices, 
+                                            &self.indices[cur_indices], 
+                                            &self.programs[cur_program], 
+                                            &uniform! {translation:  cur_translation, 
+                                                       scale:        cur_scale, 
+                                                       angle:        cur_angle,
+                                                       origin:       cur_origin,
+                                                       aspect_ratio: aspect_ratio}, 
+                                            &params).unwrap(); 
+                            } 
                         } 
-                    } 
-                },
-                GfxCommandTypes::TriangleDraw => {
-                    match self.triangle_vertices {
-                        None => println!("No Triangle Vertices Set"),
-                        Some(ref vertices) => {
-                            target.draw(vertices, 
-                                        &self.indices[cur_indices], 
-                                        &self.programs[cur_program], 
-                                        &uniform! {translation:  cur_translation, 
-                                                   scale:        cur_scale, 
-                                                   angle:        cur_angle,
-                                                   origin:       cur_origin,
-                                                   aspect_ratio: aspect_ratio}, 
-                                        &params).unwrap(); 
+                    },
+                    GfxCommandTypes::TriangleDraw => {
+                        match self.triangle_vertices {
+                            None => println!("No Triangle Vertices Set"),
+                            Some(ref vertices) => {
+                                target.draw(vertices, 
+                                            &self.indices[cur_indices], 
+                                            &self.programs[cur_program], 
+                                            &uniform! {translation:  cur_translation, 
+                                                       scale:        cur_scale, 
+                                                       angle:        cur_angle,
+                                                       origin:       cur_origin,
+                                                       aspect_ratio: aspect_ratio}, 
+                                            &params).unwrap(); 
+                            } 
                         } 
-                    } 
-                },
-                GfxCommandTypes::NoOp               => { },
-                GfxCommandTypes::Indices(index)     => cur_indices = index,
-                GfxCommandTypes::Program(index)     => cur_program = index,
-                GfxCommandTypes::Rotate(angle)      => cur_angle = angle,
-                GfxCommandTypes::Scale(scale)       => cur_scale = scale,
-                GfxCommandTypes::Translate { x, y } => { cur_translation[0] = x; cur_translation[1] = y }
-                GfxCommandTypes::Origin { x, y }    => { cur_origin[0] = x; cur_origin[1] = y }
+                    },
+                    GfxCommandTypes::NoOp               => { },
+                    GfxCommandTypes::Indices(index)     => cur_indices = index,
+                    GfxCommandTypes::Program(index)     => cur_program = index,
+                    GfxCommandTypes::Rotate(angle)      => cur_angle = angle,
+                    GfxCommandTypes::Scale(scale)       => cur_scale = scale,
+                    GfxCommandTypes::Translate { x, y } => { cur_translation[0] = x; cur_translation[1] = y }
+                    GfxCommandTypes::Origin { x, y }    => { cur_origin[0] = x; cur_origin[1] = y }
+                }
             }
         }
     
@@ -1080,7 +1178,7 @@ fn main() {
     gfx.add_program(&display, linevertex140, linefragment140);
     gfx.add_program(&display, trivertex140, trifragment140);
     gfx.rotate(0.5);
-    gfx.scale(0.005);
+    gfx.scale(0.05);
     gfx.origin(0.0,1000.0);
 
     let mut planet = Planet::new((0.0, 0.0),
@@ -1110,15 +1208,27 @@ fn main() {
                     }
 
                     if input.state == glutin::event::ElementState::Released {
-                        player_ship.rotate_off();
-                        player_ship.thrust_off();
-                    } else if input.scancode == 105 && input.state == glutin::event::ElementState::Pressed {
-                        player_ship.rotate_left();
-                    } else if input.scancode == 106 && input.state == glutin::event::ElementState::Pressed {
-                        player_ship.rotate_right();
-                    } else if input.scancode == 108 && input.state == glutin::event::ElementState::Pressed {
-                        player_ship.thrust_on();
+                        if input.scancode == 105 && player_ship.turning_left() {
+                            player_ship.rotate_off();
+                        }
+                        if input.scancode == 106 && player_ship.turning_right() {
+                            player_ship.rotate_off();
+                        }
+                        if input.scancode == 108 && player_ship.thrusting() {
+                            player_ship.thrust_off();
+                        }
+                    } else { // key pressed
+                        if input.scancode == 105 {
+                            player_ship.rotate_left();
+                        }
+                        if input.scancode == 106 {
+                            player_ship.rotate_right();
+                        }
+                        if input.scancode == 108 {
+                            player_ship.thrust_on();
+                        }
                     }
+                
                     println!("key: {0} {1} {2}", input.scancode, 
                                                  if input.state == glutin::event::ElementState::Pressed { "pressed" } else { "released" },
                                                  is_synthetic);
