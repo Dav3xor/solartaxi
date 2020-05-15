@@ -434,17 +434,20 @@ impl PlayerShip {
             }
         }
         gfx.change_translation(self.gfx_translation,self.position);
-        gfx.change_translation(self.gfx_left_gear_translation, 
-                               rotate ((-3.0, -7.0), self.angle));
-        gfx.change_translation(self.gfx_right_gear_translation, 
-                               rotate ((3.0, -7.0), self.angle));
 
+        // gear legs
+        gfx.change_translation(self.gfx_left_gear_translation, 
+                               add_points(self.position, rotate ((-3.0, -7.0), self.angle)));
+        gfx.change_translation(self.gfx_right_gear_translation, 
+                               add_points(self.position, rotate ((3.0, -7.0), self.angle)));
+
+        // gear feet
         gfx.change_translation(self.gfx_left_foot_translation, 
-                               add_points(rotate((-3.0, -7.0), self.angle),
-                                         rotate((-2.0, -5.5), self.angle-gear_angle)));
+                               add_points(self.position, add_points(rotate((-3.0, -7.0), self.angle),
+                                                                    rotate((-2.0, -5.5), self.angle-gear_angle))));
         gfx.change_translation(self.gfx_right_foot_translation, 
-                               add_points(rotate((3.0, -7.0), self.angle),
-                                         rotate((2.0, -5.5), self.angle+gear_angle)));
+                               add_points(self.position, add_points(rotate((3.0, -7.0), self.angle),
+                                                                    rotate((2.0, -5.5), self.angle+gear_angle))));
 
         gfx.change_rotation(self.gfx_left_gear_rotation, self.angle-gear_angle);
         gfx.change_rotation(self.gfx_right_gear_rotation, self.angle+gear_angle);
