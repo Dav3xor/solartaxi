@@ -20,6 +20,10 @@ fn get_distance(c1: (f32, f32), c2: (f32,f32)) -> f32 {
     return ((c1.0-c2.0).powf(2.0) + (c1.1-c2.1).powf(2.0)).sqrt();
 }
 
+fn get_angle(c1: (f32, f32), c2: (f32,f32)) -> f32 {
+    return f32::atan2(c1.0 - c2.0, 
+                      c1.1 - c2.1);
+}
 
 #[derive(Copy, Clone)]
 enum GfxCommandTypes {
@@ -92,6 +96,8 @@ struct Planet {
     velocity: (f32, f32),
     mass: f32,
     size: f32,
+    hills_trans: usize,
+    mountains_trans: usize,
     hills_geometry: usize,
     mountains_geometry: usize,
     sky_geometry: usize,
@@ -107,11 +113,22 @@ impl Planet {
                  velocity:           (0.0, 0.0),
                  mass:               mass,
                  size:               size,
+                 hills_trans:        gfx_geometry["hills_trans"],
+                 mountains_trans:    gfx_geometry["mountains_trans"],
                  hills_geometry:     gfx_geometry["hills"],
                  mountains_geometry: gfx_geometry["mountains"],
                  sky_geometry:       gfx_geometry["sky"],
                  horizon_geometry:   gfx_geometry["horizon"]
         }
+    }
+
+    fn tick(&mut self, gfx: &mut Gfx, angle: f32) {
+        gfx.change_translation(self.hills_trans, 
+                               (angle.sin()*(self.size - (self.size*0.35)),
+                               angle.cos()*(self.size - (self.size*0.35))));
+        gfx.change_translation(self.mountains_trans, 
+                               (angle.sin()*(self.size - (self.size*0.3)),
+                               angle.cos()*(self.size - (self.size*0.3))));
     }
 
     fn geometry(gfx: &mut Gfx, 
@@ -131,12 +148,12 @@ impl Planet {
         gfx.triangle_draw();
 
         // tall mountains
-        gfx.translate(0.0,radius - (0.3 * radius));
+        handles.insert("mountains_trans".to_string(), gfx.translate(0.0,radius - (0.3 * radius)));
         gfx.indices(handles["mountains"]);
         gfx.triangle_draw();
 
         // hills
-        gfx.translate(0.0,radius - (0.35 * radius));
+        handles.insert("hills_trans".to_string(), gfx.translate(0.0,radius - (0.35 * radius)));
         gfx.indices(handles["hills"]);
         gfx.triangle_draw();
 
@@ -305,9 +322,9 @@ impl PlayerShip {
     fn gravity(&mut self, planet: &Planet)
     {
         let distance = get_distance(self.position, planet.position);
-        let angle    = f32::atan2(self.position.0 - planet.position.0, 
-                                  self.position.1 - planet.position.1);
-        if distance > (planet.size-0.1) {
+        let angle    = get_angle(self.position, planet.position);
+
+        if distance > (planet.size-0.01) {
             let pull = (1.0/(distance.powf(2.0))) * 8000.0;
             self.velocity.0 -= angle.sin() * pull;
             self.velocity.1 -= angle.cos() * pull;
@@ -885,10 +902,9 @@ impl PlayerShip {
         handles.insert("right_foot_translation".to_string(), gfx.translate(5.0,-12.5));
         handles.insert("right_foot_draw".to_string(), gfx.triangle_draw());
         
-        // ship rotation/translate/origin
+        // ship rotation/translate
         handles.insert("ship_rotation".to_string(), gfx.rotate(0.0));
         handles.insert("ship_translation".to_string(), gfx.translate(0.0,0.0));
-        //handles.insert("ship_origin".to_string(), 0); //gfx.origin(0.0,0.0));
 
         handles.insert("ship_indices".to_string(), gfx.indices(handles["fuselage"]));
         handles.insert("ship_draw".to_string(), gfx.triangle_draw());
@@ -992,6 +1008,10 @@ impl Gfx {
     fn scale(&mut self, scale: f32) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Scale ( scale )});
         return self.commands.len() - 1;
+    }
+    
+    fn change_scale(&mut self, id: usize, angle: f32) {
+        self.commands[id].command = GfxCommandTypes::Scale ( angle );
     }
     
     fn translate(&mut self, x: f32, y: f32) -> usize {
@@ -1180,7 +1200,6 @@ fn main() {
 
     gfx.add_program(&display, linevertex140, linefragment140);
     gfx.add_program(&display, trivertex140, trifragment140);
-    gfx.rotate(0.5);
     gfx.scale(0.05);
     gfx.origin(0.0,1000.0);
 
@@ -1241,10 +1260,14 @@ fn main() {
             _ => ()
         };
         
-        angle += 0.0001;
-        gfx.change_rotation(0,angle);
-        gfx.change_origin(2,player_ship.position.0, player_ship.position.1);
+        let angle = get_angle(planet.position, player_ship.position);
+        let distance = get_distance(planet.position, player_ship.position);
+        let midpoint = planet.size + ((distance - planet.size)/2.0);
+
+        gfx.change_origin(1, -1.0 * angle.sin()*midpoint, -1.0 * angle.cos()*midpoint);
+        gfx.change_scale(0, 0.00005 + (1.0/(distance-planet.size + 10.0))  );
         player_ship.tick(&mut gfx);
+        planet.tick(&mut gfx, get_angle(player_ship.position, planet.position));
         player_ship.gravity(&planet);
         gfx.run(&mut display);
     });
