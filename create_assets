@@ -1,0 +1,28 @@
+#!/usr/bin/python3
+
+import os
+import glob
+import tripy
+from svgpathtools import svg2paths
+
+artdir = 'art'
+objects = {}
+
+def convert_path(path):
+    points = []
+    for i in path:
+        points.append((i[0].real * -1.0,
+                       (i[0].imag - 297.0) * -1.0))
+    return points
+
+for svg_file in glob.iglob('art/*.svg'):
+    paths, attributes = svg2paths(svg_file)
+    obj = []
+    for i in range(len(attributes)):
+        cur_poly = {}
+        cur_poly['style'] = attributes[i]['style']
+        cur_poly['path'] = convert_path(paths[i])
+        obj.append(cur_poly);
+    objects[svg_file[4:-4]] = obj
+
+print(objects)
