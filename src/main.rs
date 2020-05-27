@@ -16,6 +16,9 @@ fn add_points(c1: (f32, f32), c2: (f32, f32)) -> (f32, f32) {
     return (c1.0 + c2.0, c1.1 + c2.1);
 }
 
+fn scale_point( point: (f32, f32), scale: f32) -> (f32, f32) {
+    return (point.0 * scale, point.1 * scale);
+}
 fn get_distance(c1: (f32, f32), c2: (f32,f32)) -> f32 {
     return ((c1.0-c2.0).powf(2.0) + (c1.1-c2.1).powf(2.0)).sqrt();
 }
@@ -33,7 +36,8 @@ enum GfxCommandTypes {
     Program(usize),
     Indices(usize),
     Rotate(f32),
-    Scale(f32),
+    SceneScale(f32),
+    ObjectScale(f32),
     Translate {
         x: f32,
         y: f32
@@ -137,7 +141,7 @@ impl Planet {
         let mut handles = HashMap::new(); 
 
         handles.insert("horizon".to_string(),      Planet::circle(gfx, &display, 200, radius));
-        handles.insert("sky".to_string(),             Planet::sky(gfx, &display, radius, 8.0, 200));
+        handles.insert("sky".to_string(),             Planet::sky(gfx, &display, radius, 16.0, 200));
         handles.insert("mountains".to_string(), Planet::mountains(gfx, &display, tall_mountains, radius*0.3, 1000));
         handles.insert("hills".to_string(),     Planet::mountains(gfx, &display, short_mountains, radius*0.35, 300));
     
@@ -269,12 +273,15 @@ struct PlayerShip {
     position: (f32, f32),
     velocity: (f32, f32),
     angle: f32,
+    scale: f32,
     flags: u32,
     gear_state: LandingGearState,
     ship_geometry: usize,
     exhaust_draw: usize,
     left_gear_geometry: usize,
     right_gear_geometry: usize,
+
+    gfx_scale: usize,
     gfx_angle: usize,
     gfx_translation: usize,
     
@@ -296,13 +303,15 @@ impl PlayerShip {
         PlayerShip { position:      (0.0, 1000.0),
                      velocity:      (0.0, 0.0),
                      angle: 0.0f32,
+                     scale: 0.05,
                      flags: 0,
                      gear_state: LandingGearState::Down,
                      ship_geometry: gfx_handles["fuselage"],
                      exhaust_draw: gfx_handles["exhaust_draw"],
                      left_gear_geometry: gfx_handles["left_gear"],
                      right_gear_geometry: gfx_handles["right_gear"],
-                    
+                     
+                     gfx_scale: gfx_handles["scale"],
                      gfx_left_gear_translation: gfx_handles["left_gear_translation"],
                      gfx_right_gear_translation: gfx_handles["right_gear_translation"],
                      gfx_left_gear_rotation: gfx_handles["left_gear_rotation"],
@@ -324,8 +333,11 @@ impl PlayerShip {
         let distance = get_distance(self.position, planet.position);
         let angle    = get_angle(self.position, planet.position);
 
+        self.scale = 0.2 + (distance-planet.size+0.001)/500.0;
+        //self.scale = 0.2;
+        //self.scale = 0.08;
         if distance > (planet.size-0.01) {
-            let pull = (1.0/(distance.powf(2.0))) * 8000.0;
+            let pull = (1.0/(distance.powf(2.0))) * 2000.0;
             self.velocity.0 -= angle.sin() * pull;
             self.velocity.1 -= angle.cos() * pull;
         } else {
@@ -411,8 +423,8 @@ impl PlayerShip {
         }
 
         if self.flags & THRUST_ON != 0 {
-            self.velocity.0 -= self.angle.sin()*0.01;
-            self.velocity.1 += self.angle.cos()*0.01;
+            self.velocity.0 -= self.angle.sin()*0.00205;
+            self.velocity.1 += self.angle.cos()*0.00205;
             gfx.unskip(self.exhaust_draw);
         } else {
             gfx.skip(self.exhaust_draw);
@@ -450,21 +462,23 @@ impl PlayerShip {
                 gear_angle = 0.0;
             }
         }
+        
+        gfx.change_object_scale(self.gfx_scale, self.scale);
         gfx.change_translation(self.gfx_translation,self.position);
 
         // gear legs
         gfx.change_translation(self.gfx_left_gear_translation, 
-                               add_points(self.position, rotate ((-3.0, -7.0), self.angle)));
+                               add_points(self.position, scale_point(rotate ((-3.0, -7.0), self.angle), self.scale)));
         gfx.change_translation(self.gfx_right_gear_translation, 
-                               add_points(self.position, rotate ((3.0, -7.0), self.angle)));
+                               add_points(self.position, scale_point(rotate ((3.0, -7.0), self.angle), self.scale)));
 
         // gear feet
         gfx.change_translation(self.gfx_left_foot_translation, 
-                               add_points(self.position, add_points(rotate((-3.0, -7.0), self.angle),
-                                                                    rotate((-2.0, -5.5), self.angle-gear_angle))));
+                               add_points(self.position, scale_point(add_points(rotate((-3.0, -7.0), self.angle),
+                                                                                rotate((-2.0, -5.5), self.angle-gear_angle)), self.scale )));
         gfx.change_translation(self.gfx_right_foot_translation, 
-                               add_points(self.position, add_points(rotate((3.0, -7.0), self.angle),
-                                                                    rotate((2.0, -5.5), self.angle+gear_angle))));
+                               add_points(self.position, scale_point(add_points(rotate((3.0, -7.0), self.angle),
+                                                                                rotate((2.0, -5.5), self.angle+gear_angle)), self.scale )));
 
         gfx.change_rotation(self.gfx_left_gear_rotation, self.angle-gear_angle);
         gfx.change_rotation(self.gfx_right_gear_rotation, self.angle+gear_angle);
@@ -877,6 +891,7 @@ impl PlayerShip {
         
 
         handles.insert("program".to_string(), gfx.program(1));
+        handles.insert("scale".to_string(), gfx.scene_scale(0.05));
 
         // left landing gear
         handles.insert("left_gear_indices".to_string(), gfx.indices(handles["left_gear"]));
@@ -946,8 +961,11 @@ impl GfxCommand {
             GfxCommandTypes::Rotate(angle)      => { 
                 println!("rotate {0}", angle);
             },
-            GfxCommandTypes::Scale(scale)       => { 
-                println!("scale {0}", scale);
+            GfxCommandTypes::SceneScale(scale)       => { 
+                println!("scene scale {0}", scale);
+            },
+            GfxCommandTypes::ObjectScale(scale)       => { 
+                println!("object scale {0}", scale);
             },
             GfxCommandTypes::Translate { x, y } =>  { 
                 println!("translate {0} {1}", x, y);
@@ -1005,15 +1023,23 @@ impl Gfx {
         self.commands[id].command = GfxCommandTypes::Rotate ( angle );
     }
 
-    fn scale(&mut self, scale: f32) -> usize {
-        self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Scale ( scale )});
+    fn scene_scale(&mut self, scale: f32) -> usize {
+        self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::SceneScale ( scale )});
         return self.commands.len() - 1;
     }
     
-    fn change_scale(&mut self, id: usize, angle: f32) {
-        self.commands[id].command = GfxCommandTypes::Scale ( angle );
+    fn object_scale(&mut self, scale: f32) -> usize {
+        self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::ObjectScale ( scale )});
+        return self.commands.len() - 1;
     }
     
+    fn change_scene_scale(&mut self, id: usize, angle: f32) {
+        self.commands[id].command = GfxCommandTypes::SceneScale ( angle );
+    }
+    
+    fn change_object_scale(&mut self, id: usize, angle: f32) {
+        self.commands[id].command = GfxCommandTypes::ObjectScale ( angle );
+    }
     fn translate(&mut self, x: f32, y: f32) -> usize {
         self.commands.push(GfxCommand { flags:0, command:GfxCommandTypes::Translate { x:x, y:y }});
         return self.commands.len() - 1;
@@ -1051,7 +1077,8 @@ impl Gfx {
         let mut cur_program     = 0usize;
         let mut cur_translation = [ 0.0, 0.0f32 ];
         let mut cur_origin      = [ 0.0, 0.0f32 ];
-        let mut cur_scale       = 0.5f32;
+        let mut cur_scene_scale = 0.5f32;
+        let mut cur_object_scale = 1.0f32;
         let mut cur_angle       = 0.0f32;
         let mut cur_indices     = 0usize;
         let params = glium::DrawParameters {
@@ -1089,7 +1116,8 @@ impl Gfx {
                                             &self.indices[cur_indices], 
                                             &self.programs[cur_program], 
                                             &uniform! {translation:  cur_translation, 
-                                                       scale:        cur_scale, 
+                                                       scene_scale:  cur_scene_scale, 
+                                                       object_scale: cur_object_scale, 
                                                        angle:        cur_angle,
                                                        origin:       cur_origin,
                                                        aspect_ratio: aspect_ratio}, 
@@ -1105,7 +1133,8 @@ impl Gfx {
                                             &self.indices[cur_indices], 
                                             &self.programs[cur_program], 
                                             &uniform! {translation:  cur_translation, 
-                                                       scale:        cur_scale, 
+                                                       scene_scale:  cur_scene_scale, 
+                                                       object_scale: cur_object_scale, 
                                                        angle:        cur_angle,
                                                        origin:       cur_origin,
                                                        aspect_ratio: aspect_ratio}, 
@@ -1117,7 +1146,8 @@ impl Gfx {
                     GfxCommandTypes::Indices(index)     => cur_indices = index,
                     GfxCommandTypes::Program(index)     => cur_program = index,
                     GfxCommandTypes::Rotate(angle)      => cur_angle = angle,
-                    GfxCommandTypes::Scale(scale)       => cur_scale = scale,
+                    GfxCommandTypes::SceneScale(scale)  => cur_scene_scale = scale,
+                    GfxCommandTypes::ObjectScale(scale) => cur_object_scale = scale,
                     GfxCommandTypes::Translate { x, y } => { cur_translation[0] = x; cur_translation[1] = y }
                     GfxCommandTypes::Origin { x, y }    => { cur_origin[0] = x; cur_origin[1] = y }
                 }
@@ -1150,13 +1180,20 @@ fn main() {
                                         in vec2 position;
                                         uniform vec2 translation;
                                         uniform vec2 origin;
-                                        uniform float scale;
+                                        uniform float scene_scale;
+                                        uniform float object_scale;
                                         uniform float angle;
                                         uniform float aspect_ratio;
                                         out vec3 vColor;
+                                       
+                                        float posx = position[0] * object_scale;
+                                        float posy = position[1] * object_scale;
+                                        float sina = sin(angle);
+                                        float cosa = cos(angle);
+
                                         void main() {
-                                            gl_Position = vec4(((position[0]*cos(angle)-position[1]*sin(angle))+(translation[0]-origin[0]))*scale*aspect_ratio,
-                                                               ((position[0]*sin(angle)+position[1]*cos(angle))+(translation[1]-origin[1]))*scale, 0.0, 1.0);
+                                            gl_Position = vec4(((posx*cosa-posy*sina)+(translation[0]-origin[0]))*scene_scale*aspect_ratio,
+                                                               ((posx*sina+posy*cosa)+(translation[1]-origin[1]))*scene_scale, 0.0, 1.0);
                                             vColor = vec3(1.0,1.0,1.0);
                                         }";
 
@@ -1172,13 +1209,19 @@ fn main() {
                                        in vec4 color;
                                        uniform vec2 translation;
                                        uniform vec2 origin;
-                                       uniform float scale;
+                                       uniform float scene_scale;
+                                       uniform float object_scale;
                                        uniform float angle;
                                        uniform float aspect_ratio;
                                        out vec4 vColor;
+
+                                       float posx = position[0] * object_scale;
+                                       float posy = position[1] * object_scale;
+                                       float sina = sin(angle);
+                                       float cosa = cos(angle);
                                        void main() {
-                                           gl_Position = vec4(((position[0]*cos(angle)-position[1]*sin(angle))+(translation[0]-origin[0]))*scale*aspect_ratio,
-                                                              ((position[0]*sin(angle)+position[1]*cos(angle))+(translation[1]-origin[1]))*scale, 0.0, 1.0);
+                                           gl_Position = vec4(((posx*cosa-posy*sina)+(translation[0]-origin[0]))*scene_scale*aspect_ratio,
+                                                              ((posx*sina+posy*cosa)+(translation[1]-origin[1]))*scene_scale, 0.0, 1.0);
                                            vColor = color;
                                        }";
 
@@ -1200,7 +1243,7 @@ fn main() {
 
     gfx.add_program(&display, linevertex140, linefragment140);
     gfx.add_program(&display, trivertex140, trifragment140);
-    gfx.scale(0.05);
+    gfx.scene_scale(0.05);
     gfx.origin(0.0,1000.0);
 
     let mut planet = Planet::new((0.0, 0.0),
@@ -1265,34 +1308,11 @@ fn main() {
         let midpoint = planet.size + ((distance - planet.size)/2.0);
 
         gfx.change_origin(1, -1.0 * angle.sin()*midpoint, -1.0 * angle.cos()*midpoint);
-        gfx.change_scale(0, 0.00005 + (1.0/(distance-planet.size + 10.0))  );
+        gfx.change_scene_scale(0, 0.00005 + (1.0/(distance-planet.size + 10.0))  );
         player_ship.tick(&mut gfx);
         planet.tick(&mut gfx, get_angle(player_ship.position, planet.position));
         player_ship.gravity(&planet);
         gfx.run(&mut display);
     });
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
