@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate glium;
 
+mod asset;
+
 #[allow(unused_imports)]
 use glium::{glutin, Surface};
 use glium::index::PrimitiveType;
@@ -68,7 +70,7 @@ struct GfxCommand {
 struct Gfx {
     commands:          Vec< GfxCommand >,
     programs:          Vec< glium::Program >,
-    indices:           Vec< glium::IndexBuffer<u16> >,
+    indices:           Vec< glium::IndexBuffer<u32> >,
     line_backing:      Vec< GfxLineVertex >,
     triangle_backing:  Vec< GfxTriangleVertex >,
     line_vertices:     Option<glium::VertexBuffer<GfxLineVertex>>,
@@ -112,7 +114,7 @@ impl Planet {
     fn new(position: (f32, f32),
            mass: f32,
            size: f32,
-           gfx_geometry: std::collections::HashMap<String, usize>) -> Planet {
+           gfx_geometry: HashMap<String, usize>) -> Planet {
         Planet { position:           position,
                  velocity:           (0.0, 0.0),
                  mass:               mass,
@@ -137,7 +139,7 @@ impl Planet {
 
     fn geometry(gfx: &mut Gfx, 
                 display: &glium::Display,
-                radius: f32) -> std::collections::HashMap<String, usize> {
+                radius: f32) -> HashMap<String, usize> {
         let mut handles = HashMap::new(); 
 
         handles.insert("horizon".to_string(),      Planet::circle(gfx, &display, 200, radius));
@@ -180,7 +182,7 @@ impl Planet {
             let angle = (i as f32)*angle_step;
             gfx.line_backing.push(GfxLineVertex { position: [ angle.sin()*radius,
                                                               angle.cos()*radius ] });
-            indices.push((start_vert as u16)+(i as u16));
+            indices.push((start_vert as u32)+(i as u32));
         }
         gfx.backing_changed = true;
         return gfx.add_indices(display, &indices, PrimitiveType::LineLoop);
@@ -203,11 +205,11 @@ impl Planet {
             gfx.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*inner_radius,
                                                                        angle.cos()*inner_radius ],
                                                            color:    [0.3, 0.4, 0.5, 1.0]});
-            indices.push((start_vert as u16)+(i as u16)*2);
-            indices.push((start_vert as u16)+(i as u16)*2+1);
+            indices.push((start_vert as u32)+(i as u32)*2);
+            indices.push((start_vert as u32)+(i as u32)*2+1);
         }
-        indices.push(start_vert as u16);
-        indices.push((start_vert as u16)+1);
+        indices.push(start_vert as u32);
+        indices.push((start_vert as u32)+1);
         let start_vert = gfx.triangle_backing.len();
         for i in 0..(num_divisions) {
             let angle = (i as f32)*angle_step;
@@ -218,11 +220,11 @@ impl Planet {
                                                                        angle.cos()*(inner_radius+height) ],
                                                            color:    [0.1, 0.2, 0.5, 1.0]});
 
-            indices.push((start_vert as u16)+(i as u16)*2);
-            indices.push((start_vert as u16)+(i as u16)*2+1);
+            indices.push((start_vert as u32)+(i as u32)*2);
+            indices.push((start_vert as u32)+(i as u32)*2+1);
         }
-        indices.push(start_vert as u16);
-        indices.push((start_vert as u16)+1);
+        indices.push(start_vert as u32);
+        indices.push((start_vert as u32)+1);
         gfx.backing_changed = true;
         return gfx.add_indices(display, &indices, PrimitiveType::TriangleStrip);
     }
@@ -247,11 +249,11 @@ impl Planet {
             gfx.triangle_backing.push(GfxTriangleVertex { position: [ angle.sin()*inner_radius,
                                                                        angle.cos()*inner_radius ],
                                                         color:    [0.2, 0.2, 0.5, 1.0]});
-            indices.push((start_vert as u16)+(i as u16)*2);
-            indices.push((start_vert as u16)+(i as u16)*2+1);
+            indices.push((start_vert as u32)+(i as u32)*2);
+            indices.push((start_vert as u32)+(i as u32)*2+1);
         }
-        indices.push(start_vert as u16);
-        indices.push((start_vert as u16)+1);
+        indices.push(start_vert as u32);
+        indices.push((start_vert as u32)+1);
         gfx.backing_changed = true;
         return gfx.add_indices(display, &indices, PrimitiveType::TriangleStrip);
     }
@@ -297,7 +299,7 @@ struct PlayerShip {
 }
 
 impl PlayerShip {
-    fn new(gfx_handles: std::collections::HashMap<String, usize>) -> PlayerShip {
+    fn new(gfx_handles: HashMap<String, usize>) -> PlayerShip {
 
 
         PlayerShip { position:      (0.0, 1000.0),
@@ -370,7 +372,7 @@ impl PlayerShip {
     }
 
     fn turning_left(&self) -> bool {
-        if (self.flags & ROTATE_LEFT != 0) {
+        if self.flags & ROTATE_LEFT != 0 {
             return true;
         } else {
             return false;
@@ -378,7 +380,7 @@ impl PlayerShip {
     }
 
     fn turning_right(&self) -> bool {
-        if (self.flags & ROTATE_RIGHT != 0) {
+        if self.flags & ROTATE_RIGHT != 0 {
             return true;
         } else {
             return false;
@@ -386,7 +388,7 @@ impl PlayerShip {
     }
 
     fn thrusting(&self) -> bool {
-        if (self.flags & THRUST_ON != 0) {
+        if self.flags & THRUST_ON != 0 {
             return true;
         } else {
             return false;
@@ -489,7 +491,7 @@ impl PlayerShip {
         gfx.change_rotation(self.gfx_angle, self.angle);
     }
     
-    fn geometry(gfx: &mut Gfx, display: &glium::Display) -> std::collections::HashMap<String, usize> {
+    fn geometry(gfx: &mut Gfx, display: &glium::Display) -> HashMap<String, usize> {
         let start_vert = gfx.triangle_backing.len();
         let mut handles = HashMap::new(); 
 
@@ -574,174 +576,174 @@ impl PlayerShip {
         let mut indices = Vec::new();
 
         // fuselage
-        indices.push((start_vert as u16)+0); // nose cone
-        indices.push((start_vert as u16)+1);
-        indices.push((start_vert as u16)+2);
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+2);
-        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u32)+0); // nose cone
+        indices.push((start_vert as u32)+1);
+        indices.push((start_vert as u32)+2);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+2);
+        indices.push((start_vert as u32)+3);
 
         
-        indices.push((start_vert as u16)+4); // forward fuselage left
-        indices.push((start_vert as u16)+7);
-        indices.push((start_vert as u16)+8);
+        indices.push((start_vert as u32)+4); // forward fuselage left
+        indices.push((start_vert as u32)+7);
+        indices.push((start_vert as u32)+8);
 
-        indices.push((start_vert as u16)+4);
-        indices.push((start_vert as u16)+5);
-        indices.push((start_vert as u16)+8);
+        indices.push((start_vert as u32)+4);
+        indices.push((start_vert as u32)+5);
+        indices.push((start_vert as u32)+8);
 
-        indices.push((start_vert as u16)+5); // forward fuselage right
-        indices.push((start_vert as u16)+6);
-        indices.push((start_vert as u16)+8);
+        indices.push((start_vert as u32)+5); // forward fuselage right
+        indices.push((start_vert as u32)+6);
+        indices.push((start_vert as u32)+8);
 
-        indices.push((start_vert as u16)+6);
-        indices.push((start_vert as u16)+8);
-        indices.push((start_vert as u16)+9);
+        indices.push((start_vert as u32)+6);
+        indices.push((start_vert as u32)+8);
+        indices.push((start_vert as u32)+9);
 
-        indices.push((start_vert as u16)+7); // middle fuselage left
-        indices.push((start_vert as u16)+10);
-        indices.push((start_vert as u16)+11);
+        indices.push((start_vert as u32)+7); // middle fuselage left
+        indices.push((start_vert as u32)+10);
+        indices.push((start_vert as u32)+11);
 
-        indices.push((start_vert as u16)+7);
-        indices.push((start_vert as u16)+8);
-        indices.push((start_vert as u16)+11);
+        indices.push((start_vert as u32)+7);
+        indices.push((start_vert as u32)+8);
+        indices.push((start_vert as u32)+11);
 
-        indices.push((start_vert as u16)+8); // middle fuselage right
-        indices.push((start_vert as u16)+9);
-        indices.push((start_vert as u16)+11);
+        indices.push((start_vert as u32)+8); // middle fuselage right
+        indices.push((start_vert as u32)+9);
+        indices.push((start_vert as u32)+11);
 
-        indices.push((start_vert as u16)+9);
-        indices.push((start_vert as u16)+11);
-        indices.push((start_vert as u16)+12);
+        indices.push((start_vert as u32)+9);
+        indices.push((start_vert as u32)+11);
+        indices.push((start_vert as u32)+12);
 
-        indices.push((start_vert as u16)+10); // aft fuselage left
-        indices.push((start_vert as u16)+13);
-        indices.push((start_vert as u16)+14);
+        indices.push((start_vert as u32)+10); // aft fuselage left
+        indices.push((start_vert as u32)+13);
+        indices.push((start_vert as u32)+14);
        
-        indices.push((start_vert as u16)+10);
-        indices.push((start_vert as u16)+11);
-        indices.push((start_vert as u16)+14);
+        indices.push((start_vert as u32)+10);
+        indices.push((start_vert as u32)+11);
+        indices.push((start_vert as u32)+14);
 
-        indices.push((start_vert as u16)+11); // aft fuselage right
-        indices.push((start_vert as u16)+12);
-        indices.push((start_vert as u16)+14);
+        indices.push((start_vert as u32)+11); // aft fuselage right
+        indices.push((start_vert as u32)+12);
+        indices.push((start_vert as u32)+14);
         
-        indices.push((start_vert as u16)+12);
-        indices.push((start_vert as u16)+14);
-        indices.push((start_vert as u16)+15);
+        indices.push((start_vert as u32)+12);
+        indices.push((start_vert as u32)+14);
+        indices.push((start_vert as u32)+15);
 
         // left wing
         
-        indices.push((start_vert as u16)+17);
-        indices.push((start_vert as u16)+16);
-        indices.push((start_vert as u16)+22);
+        indices.push((start_vert as u32)+17);
+        indices.push((start_vert as u32)+16);
+        indices.push((start_vert as u32)+22);
         
-        indices.push((start_vert as u16)+17);
-        indices.push((start_vert as u16)+22);
-        indices.push((start_vert as u16)+21);
+        indices.push((start_vert as u32)+17);
+        indices.push((start_vert as u32)+22);
+        indices.push((start_vert as u32)+21);
         
-        indices.push((start_vert as u16)+17);
-        indices.push((start_vert as u16)+21);
-        indices.push((start_vert as u16)+20);
+        indices.push((start_vert as u32)+17);
+        indices.push((start_vert as u32)+21);
+        indices.push((start_vert as u32)+20);
         
-        indices.push((start_vert as u16)+17);
-        indices.push((start_vert as u16)+20);
-        indices.push((start_vert as u16)+19);
+        indices.push((start_vert as u32)+17);
+        indices.push((start_vert as u32)+20);
+        indices.push((start_vert as u32)+19);
         
-        indices.push((start_vert as u16)+17);
-        indices.push((start_vert as u16)+19);
-        indices.push((start_vert as u16)+18);
+        indices.push((start_vert as u32)+17);
+        indices.push((start_vert as u32)+19);
+        indices.push((start_vert as u32)+18);
         // right wing
-        indices.push((start_vert as u16)+24);
-        indices.push((start_vert as u16)+23);
-        indices.push((start_vert as u16)+29);
+        indices.push((start_vert as u32)+24);
+        indices.push((start_vert as u32)+23);
+        indices.push((start_vert as u32)+29);
          
-        indices.push((start_vert as u16)+24);
-        indices.push((start_vert as u16)+29);
-        indices.push((start_vert as u16)+28);
+        indices.push((start_vert as u32)+24);
+        indices.push((start_vert as u32)+29);
+        indices.push((start_vert as u32)+28);
         
-        indices.push((start_vert as u16)+24);
-        indices.push((start_vert as u16)+28);
-        indices.push((start_vert as u16)+27);
+        indices.push((start_vert as u32)+24);
+        indices.push((start_vert as u32)+28);
+        indices.push((start_vert as u32)+27);
         
-        indices.push((start_vert as u16)+24);
-        indices.push((start_vert as u16)+27);
-        indices.push((start_vert as u16)+26);
+        indices.push((start_vert as u32)+24);
+        indices.push((start_vert as u32)+27);
+        indices.push((start_vert as u32)+26);
         
-        indices.push((start_vert as u16)+24);
-        indices.push((start_vert as u16)+26);
-        indices.push((start_vert as u16)+25);
+        indices.push((start_vert as u32)+24);
+        indices.push((start_vert as u32)+26);
+        indices.push((start_vert as u32)+25);
 
         // cockpit
-        indices.push((start_vert as u16)+30);
-        indices.push((start_vert as u16)+31);
-        indices.push((start_vert as u16)+32);
+        indices.push((start_vert as u32)+30);
+        indices.push((start_vert as u32)+31);
+        indices.push((start_vert as u32)+32);
 
-        indices.push((start_vert as u16)+32);
-        indices.push((start_vert as u16)+33);
-        indices.push((start_vert as u16)+30);
+        indices.push((start_vert as u32)+32);
+        indices.push((start_vert as u32)+33);
+        indices.push((start_vert as u32)+30);
 
         // left middle window 
-        indices.push((start_vert as u16)+35);
-        indices.push((start_vert as u16)+34);
-        indices.push((start_vert as u16)+39);
+        indices.push((start_vert as u32)+35);
+        indices.push((start_vert as u32)+34);
+        indices.push((start_vert as u32)+39);
         
-        indices.push((start_vert as u16)+35);
-        indices.push((start_vert as u16)+39);
-        indices.push((start_vert as u16)+38);
+        indices.push((start_vert as u32)+35);
+        indices.push((start_vert as u32)+39);
+        indices.push((start_vert as u32)+38);
         
-        indices.push((start_vert as u16)+35);
-        indices.push((start_vert as u16)+36);
-        indices.push((start_vert as u16)+38);
+        indices.push((start_vert as u32)+35);
+        indices.push((start_vert as u32)+36);
+        indices.push((start_vert as u32)+38);
 
-        indices.push((start_vert as u16)+36);
-        indices.push((start_vert as u16)+37);
-        indices.push((start_vert as u16)+38);
+        indices.push((start_vert as u32)+36);
+        indices.push((start_vert as u32)+37);
+        indices.push((start_vert as u32)+38);
         
         // left rear window
-        indices.push((start_vert as u16)+40);
-        indices.push((start_vert as u16)+43);
-        indices.push((start_vert as u16)+41);
+        indices.push((start_vert as u32)+40);
+        indices.push((start_vert as u32)+43);
+        indices.push((start_vert as u32)+41);
 
-        indices.push((start_vert as u16)+41);
-        indices.push((start_vert as u16)+42);
-        indices.push((start_vert as u16)+43);
+        indices.push((start_vert as u32)+41);
+        indices.push((start_vert as u32)+42);
+        indices.push((start_vert as u32)+43);
 
         // right middle window 
-        indices.push((start_vert as u16)+45);
-        indices.push((start_vert as u16)+44);
-        indices.push((start_vert as u16)+49);
+        indices.push((start_vert as u32)+45);
+        indices.push((start_vert as u32)+44);
+        indices.push((start_vert as u32)+49);
         
-        indices.push((start_vert as u16)+45);
-        indices.push((start_vert as u16)+49);
-        indices.push((start_vert as u16)+48);
+        indices.push((start_vert as u32)+45);
+        indices.push((start_vert as u32)+49);
+        indices.push((start_vert as u32)+48);
         
-        indices.push((start_vert as u16)+45);
-        indices.push((start_vert as u16)+46);
-        indices.push((start_vert as u16)+48);
+        indices.push((start_vert as u32)+45);
+        indices.push((start_vert as u32)+46);
+        indices.push((start_vert as u32)+48);
 
-        indices.push((start_vert as u16)+46);
-        indices.push((start_vert as u16)+47);
-        indices.push((start_vert as u16)+48);
+        indices.push((start_vert as u32)+46);
+        indices.push((start_vert as u32)+47);
+        indices.push((start_vert as u32)+48);
         
         // right rear window
-        indices.push((start_vert as u16)+50);
-        indices.push((start_vert as u16)+53);
-        indices.push((start_vert as u16)+51);
+        indices.push((start_vert as u32)+50);
+        indices.push((start_vert as u32)+53);
+        indices.push((start_vert as u32)+51);
 
-        indices.push((start_vert as u16)+51);
-        indices.push((start_vert as u16)+52);
-        indices.push((start_vert as u16)+53);
+        indices.push((start_vert as u32)+51);
+        indices.push((start_vert as u32)+52);
+        indices.push((start_vert as u32)+53);
 
 
         // fin
-        indices.push((start_vert as u16)+54);
-        indices.push((start_vert as u16)+55);
-        indices.push((start_vert as u16)+56);
+        indices.push((start_vert as u32)+54);
+        indices.push((start_vert as u32)+55);
+        indices.push((start_vert as u32)+56);
 
-        indices.push((start_vert as u16)+56);
-        indices.push((start_vert as u16)+57);
-        indices.push((start_vert as u16)+54);
+        indices.push((start_vert as u32)+56);
+        indices.push((start_vert as u32)+57);
+        indices.push((start_vert as u32)+54);
 
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
 
@@ -764,30 +766,30 @@ impl PlayerShip {
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ 0.7, -12.0 ], color: [ 1.0, 0.3, 0.0, 1.0 ] }); // 57 
 
         // left exhaust 
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+3);
-        indices.push((start_vert as u16)+4);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+3);
+        indices.push((start_vert as u32)+4);
 
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+1);
-        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+1);
+        indices.push((start_vert as u32)+3);
 
-        indices.push((start_vert as u16)+1);
-        indices.push((start_vert as u16)+2);
-        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u32)+1);
+        indices.push((start_vert as u32)+2);
+        indices.push((start_vert as u32)+3);
 
         // right exhaust
-        indices.push((start_vert as u16)+5);
-        indices.push((start_vert as u16)+8);
-        indices.push((start_vert as u16)+9);
+        indices.push((start_vert as u32)+5);
+        indices.push((start_vert as u32)+8);
+        indices.push((start_vert as u32)+9);
 
-        indices.push((start_vert as u16)+5);
-        indices.push((start_vert as u16)+6);
-        indices.push((start_vert as u16)+8);
+        indices.push((start_vert as u32)+5);
+        indices.push((start_vert as u32)+6);
+        indices.push((start_vert as u32)+8);
 
-        indices.push((start_vert as u16)+6);
-        indices.push((start_vert as u16)+7);
-        indices.push((start_vert as u16)+8);
+        indices.push((start_vert as u32)+6);
+        indices.push((start_vert as u32)+7);
+        indices.push((start_vert as u32)+8);
         
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
@@ -803,17 +805,17 @@ impl PlayerShip {
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.8, -6.0 ], color: [ 0.1, 0.15, 0.15, 1.0 ] }); // 57 
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.2, -6.0 ], color: [ 0.05, 0.1, 0.1, 1.0 ] }); // 57 
 
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+1);
-        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+1);
+        indices.push((start_vert as u32)+2);
 
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+2);
-        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+2);
+        indices.push((start_vert as u32)+3);
         
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+3);
-        indices.push((start_vert as u16)+4);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+3);
+        indices.push((start_vert as u32)+4);
         
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
@@ -829,17 +831,17 @@ impl PlayerShip {
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ 1.8, -6.0 ], color: [ 0.1, 0.15, 0.15, 1.0 ] }); // 57 
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ 2.2, -6.0 ], color: [ 0.05, 0.1, 0.1, 1.0 ] }); // 57 
         
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+1);
-        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+1);
+        indices.push((start_vert as u32)+2);
 
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+2);
-        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+2);
+        indices.push((start_vert as u32)+3);
         
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+3);
-        indices.push((start_vert as u16)+4);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+3);
+        indices.push((start_vert as u32)+4);
         
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
@@ -855,13 +857,13 @@ impl PlayerShip {
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ 1.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ -2.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
         
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+1);
-        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+1);
+        indices.push((start_vert as u32)+2);
         
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+2);
-        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+2);
+        indices.push((start_vert as u32)+3);
         
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
@@ -876,13 +878,13 @@ impl PlayerShip {
         gfx.triangle_backing.push( GfxTriangleVertex { position: [ -1.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
         gfx.triangle_backing.push( GfxTriangleVertex { position: [  2.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
         
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+1);
-        indices.push((start_vert as u16)+2);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+1);
+        indices.push((start_vert as u32)+2);
         
-        indices.push((start_vert as u16)+0);
-        indices.push((start_vert as u16)+2);
-        indices.push((start_vert as u16)+3);
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+2);
+        indices.push((start_vert as u32)+3);
         
         gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
@@ -1106,7 +1108,7 @@ impl Gfx {
         
         target.clear_color(0.0, 0.0, 0.0, 0.0);
         for command in self.commands.iter() {
-            if (command.flags & GFX_SKIP == 0) {
+            if command.flags & GFX_SKIP == 0 {
                 match command.command {
                     GfxCommandTypes::LineDraw => {
                         match self.line_vertices {
@@ -1162,7 +1164,7 @@ impl Gfx {
                                     140 => {vertex:vert_shader, fragment:frag_shader}).unwrap());
         return self.programs.len() - 1;
     }
-    fn add_indices(&mut self, display: &glium::Display, indices: &[u16], primitive_type: PrimitiveType) -> usize {
+    fn add_indices(&mut self, display: &glium::Display, indices: &[u32], primitive_type: PrimitiveType) -> usize {
         self.indices.push(glium::IndexBuffer::new(display, 
                                                   primitive_type,
                                                   indices).unwrap());

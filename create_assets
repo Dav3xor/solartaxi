@@ -2,11 +2,18 @@
 
 import os
 import glob
-import tripy
+import tp
+import jinja2
+
 from svgpathtools import svg2paths
 
 artdir = 'art'
 objects = {}
+
+templateLoader = jinja2.FileSystemLoader(searchpath="./src/")
+templateEnv = jinja2.Environment(loader=templateLoader)
+TEMPLATE_FILE = "assets.rs.jinja2"
+template = templateEnv.get_template(TEMPLATE_FILE)
 
 def convert_path(path):
     points = []
@@ -22,7 +29,12 @@ for svg_file in glob.iglob('art/*.svg'):
         cur_poly = {}
         cur_poly['style'] = attributes[i]['style']
         cur_poly['path'] = convert_path(paths[i])
+        cur_poly['tries'] = tp.earclip(cur_poly['path'])
         obj.append(cur_poly);
     objects[svg_file[4:-4]] = obj
 
 print(objects)
+
+outputText = template.render(assets = objects)  # this is where to put args to the template renderer
+
+print(outputText)
