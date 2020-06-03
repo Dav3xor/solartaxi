@@ -1,10 +1,37 @@
-mod asset;
 
 use std::collections::HashMap;
 
-let mut assets = HashMap::new();
-
-{% for name, asset in assets.iteritems %}
+mod asset;
 
 
-{% endfor %}
+pub fn build_assets() -> HashMap < String, asset::AssetType > {
+    let mut assets = HashMap::new();
+
+    {% for name, asset in assets.items() %}
+    {% set type, subtype = name.split('.') %}
+    if assets.contains_key("{{ type }}") == false {
+        assets.insert("{{ type }}".to_string(), asset::AssetType::new());
+    }
+    let mut asset = asset::Asset::new();
+    {% for poly in asset %}
+    let mut poly = asset::AssetPolygon::new(({{ poly['style']['fill'][1:3] | int(base=16) / 255.0 }},
+                                             {{ poly['style']['fill'][4:6] | int(base=16) / 255.0 }},
+                                             {{ poly['style']['fill'][6:8] | int(base=16) / 255.0 }}) );
+    {% for point in poly['path'] %}
+    poly.add_vertex({{ point }});
+    {% endfor %}
+
+    {% for tri in poly['tries'] %}
+    poly.add_index({{ tri[0] }}); poly.add_index({{ tri[1] }}); poly.add_index({{ tri[2] }});
+    {% endfor %}
+    asset.add_polygon(poly);
+
+    {% endfor %}
+    assets.get_mut(&"{{ type }}".to_string()).unwrap().add_asset(asset, "{{ subtype }}".to_string());
+    {{ name_x }}
+    {{ asset_x }}
+
+
+    {% endfor %}
+    return assets;
+}

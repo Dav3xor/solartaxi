@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate glium;
 
-mod asset;
+mod assets;
 
 #[allow(unused_imports)]
 use glium::{glutin, Surface};
@@ -1174,6 +1174,7 @@ impl Gfx {
 
 
 fn main() {
+    let assets = assets::build_assets();
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
     let cb = glutin::ContextBuilder::new();

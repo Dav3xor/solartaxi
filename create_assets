@@ -11,7 +11,7 @@ artdir = 'art'
 objects = {}
 
 templateLoader = jinja2.FileSystemLoader(searchpath="./src/")
-templateEnv = jinja2.Environment(loader=templateLoader)
+templateEnv = jinja2.Environment(loader=templateLoader, trim_blocks=True, lstrip_blocks=True)
 TEMPLATE_FILE = "assets.rs.jinja2"
 template = templateEnv.get_template(TEMPLATE_FILE)
 
@@ -26,8 +26,15 @@ for svg_file in glob.iglob('art/*.svg'):
     paths, attributes = svg2paths(svg_file)
     obj = []
     for i in range(len(attributes)):
+
+        styles = attributes[i]['style'].split(';')
+        styles2 = {}
+        for j in styles:
+            key, value = j.split(':')
+            styles2[key] = value
+
         cur_poly = {}
-        cur_poly['style'] = attributes[i]['style']
+        cur_poly['style'] = styles2
         cur_poly['path'] = convert_path(paths[i])
         cur_poly['tries'] = tp.earclip(cur_poly['path'])
         obj.append(cur_poly);
@@ -35,6 +42,8 @@ for svg_file in glob.iglob('art/*.svg'):
 
 print(objects)
 
-outputText = template.render(assets = objects)  # this is where to put args to the template renderer
+output = template.render(assets = objects)  # this is where to put args to the template renderer
 
-print(outputText)
+with open("src/assets.rs", "w") as fh:
+    fh.write(output)
+print(output)
