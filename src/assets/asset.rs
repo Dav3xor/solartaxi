@@ -25,12 +25,20 @@ impl Assets {
         Assets { asset_types: assets }
     }
 
-    pub fn add_asset(&mut self, asset_type: String, asset_subtype: String, asset: Asset) {
+    pub fn add_asset(&mut self, 
+                     asset_type: String, 
+                     asset_subtype: String, 
+                     asset: Asset) {
         if self.asset_types.contains_key(&asset_type) == false {
             self.asset_types.insert(asset_type.clone(), AssetType::new());
         }
         self.asset_types.get_mut(&asset_type).unwrap().add_asset(asset, asset_subtype);
     }
+    
+    pub fn get_asset(&mut self, asset_type: &String, asset_subtype: &String) -> &Asset {
+        return self.asset_types.get(asset_type).unwrap().assets.get(asset_subtype).unwrap();
+    }
+        
 }
 impl AssetPolygon {
     pub fn new(color: (f32, f32, f32)) -> AssetPolygon {

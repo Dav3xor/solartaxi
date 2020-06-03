@@ -4,14 +4,11 @@ use std::collections::HashMap;
 mod asset;
 
 
-pub fn build_assets() -> HashMap < String, asset::AssetType > {
-    let mut assets = HashMap::new();
+pub fn build_assets() -> asset::Assets {
+    let mut assets = asset::Assets::new();
 
     {% for name, asset in assets.items() %}
     {% set type, subtype = name.split('.') %}
-    if assets.contains_key("{{ type }}") == false {
-        assets.insert("{{ type }}".to_string(), asset::AssetType::new());
-    }
     let mut asset = asset::Asset::new();
     {% for poly in asset %}
     let mut poly = asset::AssetPolygon::new(({{ poly['style']['fill'][1:3] | int(base=16) / 255.0 }},
@@ -27,7 +24,9 @@ pub fn build_assets() -> HashMap < String, asset::AssetType > {
     asset.add_polygon(poly);
 
     {% endfor %}
-    assets.get_mut(&"{{ type }}".to_string()).unwrap().add_asset(asset, "{{ subtype }}".to_string());
+    assets.add_asset("{{ type }}".to_string(), 
+                     "{{ subtype }}".to_string(), 
+                     asset);
     {{ name_x }}
     {{ asset_x }}
 

@@ -4,12 +4,9 @@ use std::collections::HashMap;
 mod asset;
 
 
-pub fn build_assets() -> HashMap < String, asset::AssetType > {
-    let mut assets = HashMap::new();
+pub fn build_assets() -> asset::Assets {
+    let mut assets = asset::Assets::new();
 
-    if assets.contains_key("lamp") == false {
-        assets.insert("lamp".to_string(), asset::AssetType::new());
-    }
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.2823529411764706,
                                              0.5294117647058824,
@@ -39,14 +36,13 @@ pub fn build_assets() -> HashMap < String, asset::AssetType > {
     poly.add_index(2); poly.add_index(10); poly.add_index(9);
     asset.add_polygon(poly);
 
-    assets.get_mut(&"lamp".to_string()).unwrap().add_asset(asset, "4".to_string());
+    assets.add_asset("lamp".to_string(), 
+                     "4".to_string(), 
+                     asset);
     
     
 
 
-    if assets.contains_key("wastebin") == false {
-        assets.insert("wastebin".to_string(), asset::AssetType::new());
-    }
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.45098039215686275,
                                              0.9137254901960784,
@@ -102,14 +98,13 @@ pub fn build_assets() -> HashMap < String, asset::AssetType > {
     poly.add_index(0); poly.add_index(2); poly.add_index(1);
     asset.add_polygon(poly);
 
-    assets.get_mut(&"wastebin".to_string()).unwrap().add_asset(asset, "1".to_string());
+    assets.add_asset("wastebin".to_string(), 
+                     "1".to_string(), 
+                     asset);
     
     
 
 
-    if assets.contains_key("hydrant") == false {
-        assets.insert("hydrant".to_string(), asset::AssetType::new());
-    }
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.5098039215686274,
                                              0.3333333333333333,
@@ -175,14 +170,13 @@ pub fn build_assets() -> HashMap < String, asset::AssetType > {
     poly.add_index(3); poly.add_index(26); poly.add_index(27);
     asset.add_polygon(poly);
 
-    assets.get_mut(&"hydrant".to_string()).unwrap().add_asset(asset, "1".to_string());
+    assets.add_asset("hydrant".to_string(), 
+                     "1".to_string(), 
+                     asset);
     
     
 
 
-    if assets.contains_key("lamp") == false {
-        assets.insert("lamp".to_string(), asset::AssetType::new());
-    }
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.2823529411764706,
                                              0.5294117647058824,
@@ -278,14 +272,13 @@ pub fn build_assets() -> HashMap < String, asset::AssetType > {
     poly.add_index(22); poly.add_index(42); poly.add_index(2);
     asset.add_polygon(poly);
 
-    assets.get_mut(&"lamp".to_string()).unwrap().add_asset(asset, "2".to_string());
+    assets.add_asset("lamp".to_string(), 
+                     "2".to_string(), 
+                     asset);
     
     
 
 
-    if assets.contains_key("lamp") == false {
-        assets.insert("lamp".to_string(), asset::AssetType::new());
-    }
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.2823529411764706,
                                              0.5294117647058824,
@@ -311,14 +304,13 @@ pub fn build_assets() -> HashMap < String, asset::AssetType > {
     poly.add_index(7); poly.add_index(1); poly.add_index(2);
     asset.add_polygon(poly);
 
-    assets.get_mut(&"lamp".to_string()).unwrap().add_asset(asset, "3".to_string());
+    assets.add_asset("lamp".to_string(), 
+                     "3".to_string(), 
+                     asset);
     
     
 
 
-    if assets.contains_key("lamp") == false {
-        assets.insert("lamp".to_string(), asset::AssetType::new());
-    }
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.2823529411764706,
                                              0.5294117647058824,
@@ -346,14 +338,13 @@ pub fn build_assets() -> HashMap < String, asset::AssetType > {
     poly.add_index(9); poly.add_index(4); poly.add_index(6);
     asset.add_polygon(poly);
 
-    assets.get_mut(&"lamp".to_string()).unwrap().add_asset(asset, "1".to_string());
+    assets.add_asset("lamp".to_string(), 
+                     "1".to_string(), 
+                     asset);
     
     
 
 
-    if assets.contains_key("lamppost") == false {
-        assets.insert("lamppost".to_string(), asset::AssetType::new());
-    }
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.2823529411764706,
                                              0.5294117647058824,
@@ -381,7 +372,9 @@ pub fn build_assets() -> HashMap < String, asset::AssetType > {
     poly.add_index(2); poly.add_index(7); poly.add_index(9);
     asset.add_polygon(poly);
 
-    assets.get_mut(&"lamppost".to_string()).unwrap().add_asset(asset, "1".to_string());
+    assets.add_asset("lamppost".to_string(), 
+                     "1".to_string(), 
+                     asset);
     
     
 
