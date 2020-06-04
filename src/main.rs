@@ -127,14 +127,12 @@ impl Planet {
               radius: f32) -> usize {
         let angle_step = (3.14159*2.0)/(num_verts as f32);
         let mut indices = Vec::new();
-        let start_vert = gfx.line_backing.len();
+        let start_vert = gfx.line_len();
         for i in 0..num_verts {
             let angle = (i as f32)*angle_step;
-            gfx.line_backing.push(gfx::GfxLineVertex { position: [ angle.sin()*radius,
-                                                              angle.cos()*radius ] });
+            gfx.add_line_vertex( ( angle.sin()*radius, angle.cos()*radius ) );
             indices.push((start_vert as u32)+(i as u32));
         }
-        gfx.backing_changed = true;
         return gfx.add_indices(display, &indices, PrimitiveType::LineLoop);
     }
 
@@ -145,7 +143,7 @@ impl Planet {
            num_divisions: u32) -> usize {
         let angle_step = (3.14159*2.0)/(num_divisions as f32);
         let mut indices = Vec::new();
-        let start_vert = gfx.triangle_backing.len();
+        let start_vert = gfx.triangle_len();
         for i in 0..(num_divisions) {
             let angle = (i as f32)*angle_step;
             gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+height), 
@@ -160,7 +158,7 @@ impl Planet {
         }
         indices.push(start_vert as u32);
         indices.push((start_vert as u32)+1);
-        let start_vert = gfx.triangle_backing.len();
+        let start_vert = gfx.triangle_len();
         for i in 0..(num_divisions) {
             let angle = (i as f32)*angle_step;
             gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+(height*1.8)),
@@ -175,7 +173,6 @@ impl Planet {
         }
         indices.push(start_vert as u32);
         indices.push((start_vert as u32)+1);
-        gfx.backing_changed = true;
         return gfx.add_indices(display, &indices, PrimitiveType::TriangleStrip);
     }
 
@@ -187,7 +184,7 @@ impl Planet {
                  num_divisions: u32 ) -> usize {
         let angle_step = (3.14159*2.0)/(num_divisions as f32);
         let mut indices = Vec::new();
-        let start_vert = gfx.triangle_backing.len();
+        let start_vert = gfx.triangle_len();
         for i in 0..(num_divisions) {
 
             let angle  = (i as f32)*angle_step;
@@ -204,7 +201,6 @@ impl Planet {
         }
         indices.push(start_vert as u32);
         indices.push((start_vert as u32)+1);
-        gfx.backing_changed = true;
         return gfx.add_indices(display, &indices, PrimitiveType::TriangleStrip);
     }
 
@@ -442,7 +438,7 @@ impl PlayerShip {
     }
     
     fn geometry(gfx: &mut gfx::Gfx, display: &glium::Display) -> HashMap<String, usize> {
-        let start_vert = gfx.triangle_backing.len();
+        let start_vert = gfx.triangle_len();
         let mut handles = HashMap::new(); 
 
         // fuselage, top to bottom... tip to tail
@@ -695,13 +691,13 @@ impl PlayerShip {
         indices.push((start_vert as u32)+57);
         indices.push((start_vert as u32)+54);
 
-        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
 
-        handles.insert("fuselage".to_string(), gfx.indices.len()-1);
+        handles.insert("fuselage".to_string(), 
+                       gfx.add_indices(display, &indices, PrimitiveType::TrianglesList));
 
         // exhaust
         let mut indices = Vec::new();
-        let start_vert = gfx.triangle_backing.len();
+        let start_vert = gfx.triangle_len();
         
         gfx.add_triangle_vertex( ( -2.0, -11.7 ), ( 1.0, 0.3, 0.0, 1.0 ) ); // 57 
         gfx.add_triangle_vertex( ( -2.7, -13.3 ), ( 1.0, 1.0, 0.1, 1.0 ) ); // 57 
@@ -741,13 +737,13 @@ impl PlayerShip {
         indices.push((start_vert as u32)+7);
         indices.push((start_vert as u32)+8);
         
-        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
-        handles.insert("exhaust".to_string(), gfx.indices.len()-1);
+        handles.insert("exhaust".to_string(), 
+                       gfx.add_indices(display, &indices, PrimitiveType::TrianglesList));
         
         // left landing gear leg
         let mut indices = Vec::new();
-        let start_vert = gfx.triangle_backing.len();
+        let start_vert = gfx.triangle_len();
         
         gfx.add_triangle_vertex( ( 0.0, 0.0 ), ( 0.05, 0.1, 0.1, 1.0 ) ); // 57 
         gfx.add_triangle_vertex( ( 1.0, 0.0 ), ( 0.1, 0.15, 0.15, 1.0 ) ); // 57 
@@ -767,13 +763,13 @@ impl PlayerShip {
         indices.push((start_vert as u32)+3);
         indices.push((start_vert as u32)+4);
         
-        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
-        handles.insert("left_gear".to_string(), gfx.indices.len()-1);
+        handles.insert("left_gear".to_string(),
+                       gfx.add_indices(display, &indices, PrimitiveType::TrianglesList));
         
         // right landing gear leg
         let mut indices = Vec::new();
-        let start_vert = gfx.triangle_backing.len();
+        let start_vert = gfx.triangle_len();
         
         gfx.add_triangle_vertex( ( 0.0, 0.0 ), ( 0.05, 0.1, 0.1, 1.0 ) ); // 57 
         gfx.add_triangle_vertex( ( -1.0, 0.0 ), ( 0.1, 0.15, 0.15, 1.0 ) ); // 57 
@@ -793,14 +789,14 @@ impl PlayerShip {
         indices.push((start_vert as u32)+3);
         indices.push((start_vert as u32)+4);
         
-        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
-        handles.insert("right_gear".to_string(), gfx.indices.len()-1);
+        handles.insert("right_gear".to_string(),
+                       gfx.add_indices(display, &indices, PrimitiveType::TrianglesList));
         
         
         // left gear foot
         let mut indices = Vec::new();
-        let start_vert = gfx.triangle_backing.len();
+        let start_vert = gfx.triangle_len();
         
         gfx.add_triangle_vertex( ( 0.0,  0.5 ), ( 0.3, 0.3, 0.3, 1.0 ) ); // 57 
         gfx.add_triangle_vertex( ( 1.0, 0.0 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 57 
@@ -815,13 +811,13 @@ impl PlayerShip {
         indices.push((start_vert as u32)+2);
         indices.push((start_vert as u32)+3);
         
-        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
-        handles.insert("left_foot".to_string(), gfx.indices.len()-1);
+        handles.insert("left_foot".to_string(),
+                       gfx.add_indices(display, &indices, PrimitiveType::TrianglesList));
         
         // right gear foot
         let mut indices = Vec::new();
-        let start_vert = gfx.triangle_backing.len();
+        let start_vert = gfx.triangle_len();
         
         gfx.add_triangle_vertex( ( 0.0, 0.5 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 57 
         gfx.add_triangle_vertex( ( -1.0, 0.0 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 57 
@@ -836,9 +832,9 @@ impl PlayerShip {
         indices.push((start_vert as u32)+2);
         indices.push((start_vert as u32)+3);
         
-        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
         
-        handles.insert("right_foot".to_string(), gfx.indices.len()-1);
+        handles.insert("right_foot".to_string(),
+                       gfx.add_indices(display, &indices, PrimitiveType::TrianglesList));
 
         
 
@@ -880,7 +876,6 @@ impl PlayerShip {
         handles.insert("exhaust_draw".to_string(), gfx.triangle_draw());
         
         
-        gfx.backing_changed = true;
         return handles;
     }
 

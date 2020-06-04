@@ -33,14 +33,14 @@ enum GfxCommandTypes {
 }
 
 #[derive(Copy, Clone)]
-pub struct GfxLineVertex {
-    pub position: [f32; 2]
+struct GfxLineVertex {
+    position: [f32; 2]
 }
 
 #[derive(Copy, Clone)]
-pub struct GfxTriangleVertex {
-    pub position: [f32; 2],
-    pub color:    [f32; 4]
+struct GfxTriangleVertex {
+    position: [f32; 2],
+    color:    [f32; 4]
 }
 
 #[derive(Copy, Clone)]
@@ -52,12 +52,12 @@ struct GfxCommand {
 pub struct Gfx {
     commands:          Vec< GfxCommand >,
     programs:          Vec< glium::Program >,
-    pub indices:           Vec< glium::IndexBuffer<u32> >,
-    pub line_backing:      Vec< GfxLineVertex >,
-    pub triangle_backing:  Vec< GfxTriangleVertex >,
+    indices:           Vec< glium::IndexBuffer<u32> >,
+    line_backing:      Vec< GfxLineVertex >,
+    triangle_backing:  Vec< GfxTriangleVertex >,
     line_vertices:     Option<glium::VertexBuffer<GfxLineVertex>>,
     triangle_vertices: Option<glium::VertexBuffer<GfxTriangleVertex>>,
-    pub backing_changed:   bool
+    backing_changed:   bool
 }
 
         
@@ -301,10 +301,26 @@ impl Gfx {
         return self.indices.len() - 1;
     }
 
+    pub fn triangle_len(&self) -> usize {
+        return self.triangle_backing.len();
+    }
+    
+    pub fn line_len(&self) -> usize {
+        return self.line_backing.len();
+    }
+    
     pub fn add_triangle_vertex(&mut self, 
                                position: (f32, f32), 
                                color: (f32, f32, f32, f32)) {
         self.triangle_backing.push( GfxTriangleVertex { position: [position.0, position.1], color: [color.0, color.1, color.2, color.3] });
+        self.backing_changed = true;
+    }
+
+    pub fn add_line_vertex(&mut self, 
+                               position: (f32, f32)) {
+                               
+        self.line_backing.push( GfxLineVertex { position: [position.0, position.1]});
+        self.backing_changed = true;
     }
 }
 
