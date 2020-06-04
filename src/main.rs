@@ -148,13 +148,13 @@ impl Planet {
         let start_vert = gfx.triangle_backing.len();
         for i in 0..(num_divisions) {
             let angle = (i as f32)*angle_step;
-            gfx.triangle_backing.push(gfx::GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
-                                                                       angle.cos()*(inner_radius+height) ],
-                                                           color:    [0.1, 0.2, 0.5, 1.0]});
+            gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+height), 
+                                       angle.cos()*(inner_radius+height) ),
+                                     (0.1, 0.2, 0.5, 1.0));
 
-            gfx.triangle_backing.push(gfx::GfxTriangleVertex { position: [ angle.sin()*inner_radius,
-                                                                       angle.cos()*inner_radius ],
-                                                           color:    [0.3, 0.4, 0.5, 1.0]});
+            gfx.add_triangle_vertex( ( angle.sin()*inner_radius,
+                                       angle.cos()*inner_radius ),
+                                     (0.3, 0.4, 0.5, 1.0));
             indices.push((start_vert as u32)+(i as u32)*2);
             indices.push((start_vert as u32)+(i as u32)*2+1);
         }
@@ -163,12 +163,12 @@ impl Planet {
         let start_vert = gfx.triangle_backing.len();
         for i in 0..(num_divisions) {
             let angle = (i as f32)*angle_step;
-            gfx.triangle_backing.push(gfx::GfxTriangleVertex { position: [ angle.sin()*(inner_radius+(height*1.8)),
-                                                                       angle.cos()*(inner_radius+(height*1.8)) ],
-                                                           color:    [0.0, 0.0, 0.0, 1.0]});
-            gfx.triangle_backing.push(gfx::GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
-                                                                       angle.cos()*(inner_radius+height) ],
-                                                           color:    [0.1, 0.2, 0.5, 1.0]});
+            gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+(height*1.8)),
+                                       angle.cos()*(inner_radius+(height*1.8)) ),
+                                     (0.0, 0.0, 0.0, 1.0));
+            gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+height),
+                                       angle.cos()*(inner_radius+height) ),
+                                     (0.1, 0.2, 0.5, 1.0));
 
             indices.push((start_vert as u32)+(i as u32)*2);
             indices.push((start_vert as u32)+(i as u32)*2+1);
@@ -192,13 +192,13 @@ impl Planet {
 
             let angle  = (i as f32)*angle_step;
             let height = height_fn(angle);
-            gfx.triangle_backing.push(gfx::GfxTriangleVertex { position: [ angle.sin()*(inner_radius+height),
-                                                                       angle.cos()*(inner_radius+height) ],
-                                                           color:    [0.05, 0.05, 0.1, 1.0]});
+            gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+height),
+                                       angle.cos()*(inner_radius+height) ),
+                                     (0.05, 0.05, 0.1, 1.0));
 
-            gfx.triangle_backing.push(gfx::GfxTriangleVertex { position: [ angle.sin()*inner_radius,
-                                                                       angle.cos()*inner_radius ],
-                                                        color:    [0.2, 0.2, 0.5, 1.0]});
+            gfx.add_triangle_vertex( ( angle.sin()*inner_radius,
+                                       angle.cos()*inner_radius ),
+                                     (0.2, 0.2, 0.5, 1.0));
             indices.push((start_vert as u32)+(i as u32)*2);
             indices.push((start_vert as u32)+(i as u32)*2+1);
         }
@@ -446,82 +446,82 @@ impl PlayerShip {
         let mut handles = HashMap::new(); 
 
         // fuselage, top to bottom... tip to tail
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.0, 19.0 ], color: [ 0.6, 0.5, 0.5, 1.0 ] }); // 0  nosecone
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.0, 16.0 ], color: [ 0.3, 0.25, 0.2, 1.0 ] }); // 1
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.0, 16.0 ], color: [ 0.8, 0.6, 0.6, 1.0 ] }); // 2
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  1.0, 16.0 ], color: [ 0.3, 0.25, 0.2, 1.0 ] }); // 3
+        gfx.add_triangle_vertex( (  0.0, 19.0 ), ( 0.6, 0.5, 0.5, 1.0 ) ); // 0  nosecone
+        gfx.add_triangle_vertex( ( -1.0, 16.0 ), ( 0.3, 0.25, 0.2, 1.0 ) ); // 1
+        gfx.add_triangle_vertex( (  0.0, 16.0 ), ( 0.8, 0.6, 0.6, 1.0 ) ); // 2
+        gfx.add_triangle_vertex( (  1.0, 16.0 ), ( 0.3, 0.25, 0.2, 1.0 ) ); // 3
         
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.0, 16.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 4  first past nosecone
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.0, 16.0 ], color: [ 0.4, 0.4, 0.4, 1.0 ] }); // 5  first past nosecone
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  1.0, 16.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 6
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -2.0, 7.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 7
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.0, 7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 8
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  2.0, 7.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 9
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -4.0, -4.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 10
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.0, -4.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 11
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  4.0, -4.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 12
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -2.0, -11.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 13
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.0, -11.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 14
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  2.0, -11.0 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 15
+        gfx.add_triangle_vertex( ( -1.0, 16.0 ), ( 0.2, 0.2, 0.2, 1.0 ) ); // 4  first past nosecone
+        gfx.add_triangle_vertex( (  0.0, 16.0 ), ( 0.4, 0.4, 0.4, 1.0 ) ); // 5  first past nosecone
+        gfx.add_triangle_vertex( (  1.0, 16.0 ), ( 0.2, 0.2, 0.2, 1.0 ) ); // 6
+        gfx.add_triangle_vertex( ( -2.0, 7.0 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 7
+        gfx.add_triangle_vertex( (  0.0, 7.0 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 8
+        gfx.add_triangle_vertex( (  2.0, 7.0 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 9
+        gfx.add_triangle_vertex( ( -4.0, -4.0 ), ( 0.3, 0.3, 0.3, 1.0 ) ); // 10
+        gfx.add_triangle_vertex( (  0.0, -4.0 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 11
+        gfx.add_triangle_vertex( (  4.0, -4.0 ), ( 0.3, 0.3, 0.3, 1.0 ) ); // 12
+        gfx.add_triangle_vertex( ( -2.0, -11.0 ), ( 0.2, 0.2, 0.2, 1.0 ) ); // 13
+        gfx.add_triangle_vertex( (  0.0, -11.0 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 14
+        gfx.add_triangle_vertex( (  2.0, -11.0 ), ( 0.2, 0.2, 0.2, 1.0 ) ); // 15
 
 
 
         // left wing, starting with forwardmost point
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -3.0, 3.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 16
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -6.0, -1.0 ], color: [ 0.25, 0.25, 0.25, 1.0 ] }); // 17
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -12.0, -5.0 ], color: [ 0.4, 0.4, 0.4, 1.0 ] }); // 18
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -12.0, -7.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 19
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -11.0, -8.0 ], color: [ 0.6, 0.6, 0.6, 1.0 ] }); // 20
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -2.9, -7.0 ], color: [ 0.65, 0.65, 0.65, 1.0 ] }); // 21 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -2.0, -0.0 ], color: [ 0.7, 0.7, 0.7, 1.0 ] }); // 22 
+        gfx.add_triangle_vertex( ( -3.0, 3.0 ), ( 0.3, 0.3, 0.3, 1.0 ) ); // 16
+        gfx.add_triangle_vertex( ( -6.0, -1.0 ), ( 0.25, 0.25, 0.25, 1.0 ) ); // 17
+        gfx.add_triangle_vertex( ( -12.0, -5.0 ), ( 0.4, 0.4, 0.4, 1.0 ) ); // 18
+        gfx.add_triangle_vertex( ( -12.0, -7.0 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 19
+        gfx.add_triangle_vertex( ( -11.0, -8.0 ), ( 0.6, 0.6, 0.6, 1.0 ) ); // 20
+        gfx.add_triangle_vertex( ( -2.9, -7.0 ), ( 0.65, 0.65, 0.65, 1.0 ) ); // 21 
+        gfx.add_triangle_vertex( ( -2.0, -0.0 ), ( 0.7, 0.7, 0.7, 1.0 ) ); // 22 
         // right wing, starting with forwardmost point
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  3.0, 3.0 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 23
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  6.0, -1.0 ], color: [ 0.25, 0.25, 0.25, 1.0 ] }); // 24 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  12.0, -5.0 ], color: [ 0.4, 0.4, 0.4, 1.0 ] }); // 25 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  12.0, -7.0 ], color: [ 0.6, 0.6, 0.6, 1.0 ] }); // 26 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  11.0, -8.0 ], color: [ 0.6, 0.6, 0.6, 1.0 ] }); // 27
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  2.9, -7.0 ], color: [ 0.65, 0.65, 0.65, 1.0 ] }); // 28 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  2.0, -0.0 ], color: [ 0.7, 0.7, 0.7, 1.0 ] }); // 29 
+        gfx.add_triangle_vertex( (  3.0, 3.0 ), ( 0.3, 0.3, 0.3, 1.0 ) ); // 23
+        gfx.add_triangle_vertex( (  6.0, -1.0 ), ( 0.25, 0.25, 0.25, 1.0 ) ); // 24 
+        gfx.add_triangle_vertex( (  12.0, -5.0 ), ( 0.4, 0.4, 0.4, 1.0 ) ); // 25 
+        gfx.add_triangle_vertex( (  12.0, -7.0 ), ( 0.6, 0.6, 0.6, 1.0 ) ); // 26 
+        gfx.add_triangle_vertex( (  11.0, -8.0 ), ( 0.6, 0.6, 0.6, 1.0 ) ); // 27
+        gfx.add_triangle_vertex( (  2.9, -7.0 ), ( 0.65, 0.65, 0.65, 1.0 ) ); // 28 
+        gfx.add_triangle_vertex( (  2.0, -0.0 ), ( 0.7, 0.7, 0.7, 1.0 ) ); // 29 
 
         // cockpit
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.0, 8.5 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 30 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  1.3, 4.6 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 31 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.0, 5.5 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 32 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.3, 4.6 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 33 
+        gfx.add_triangle_vertex( (  0.0, 8.5 ), ( 0.0, 0.0, 0.0, 1.0 ) ); // 30 
+        gfx.add_triangle_vertex( (  1.3, 4.6 ), ( 0.0, 0.0, 0.0, 1.0 ) ); // 31 
+        gfx.add_triangle_vertex( (  0.0, 5.5 ), ( 0.2, 0.2, 0.2, 1.0 ) ); // 32 
+        gfx.add_triangle_vertex( ( -1.3, 4.6 ), ( 0.0, 0.0, 0.0, 1.0 ) ); // 33 
       
         // left middle window
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -0.2, 5.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 34 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.4, 4.2 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 35 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.5, 3.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 36 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -0.9, 2.8 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 37 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -0.8, 3.7 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 38 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -0.3, 4.2 ], color: [ 0.12, 0.12, 0.12, 1.0 ] }); // 39 
+        gfx.add_triangle_vertex( ( -0.2, 5.0 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 34 
+        gfx.add_triangle_vertex( ( -1.4, 4.2 ), ( 0.0, 0.0, 0.0, 1.0 ) ); // 35 
+        gfx.add_triangle_vertex( ( -1.5, 3.1 ), ( 0.0, 0.0, 0.0, 1.0 ) ); // 36 
+        gfx.add_triangle_vertex( ( -0.9, 2.8 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 37 
+        gfx.add_triangle_vertex( ( -0.8, 3.7 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 38 
+        gfx.add_triangle_vertex( ( -0.3, 4.2 ), ( 0.12, 0.12, 0.12, 1.0 ) ); // 39 
         
         // left rear window
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.5, 2.8 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 40 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.3, 1.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 41 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.0, 1.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 42 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -0.9, 2.5 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 43 
+        gfx.add_triangle_vertex( ( -1.5, 2.8 ), ( 0.0, 0.0, 0.0, 1.0 ) ); // 40 
+        gfx.add_triangle_vertex( ( -1.3, 1.1 ), ( 0.0, 0.0, 0.0, 1.0 ) ); // 41 
+        gfx.add_triangle_vertex( ( -1.0, 1.0 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 42 
+        gfx.add_triangle_vertex( ( -0.9, 2.5 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 43 
 
         // right middle window
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.2, 5.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 44 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  1.4, 4.2 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 45 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  1.5, 3.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 46 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.9, 2.8 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 47 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.8, 3.7 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 48 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.3, 4.2 ], color: [ 0.2, 0.2, 0.2, 1.0 ] }); // 49 
+        gfx.add_triangle_vertex( (  0.2, 5.0 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 44 
+        gfx.add_triangle_vertex( (  1.4, 4.2 ), ( 0.0, 0.0, 0.0, 1.0 ) ); // 45 
+        gfx.add_triangle_vertex( (  1.5, 3.1 ), ( 0.0, 0.0, 0.0, 1.0 ) ); // 46 
+        gfx.add_triangle_vertex( (  0.9, 2.8 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 47 
+        gfx.add_triangle_vertex( (  0.8, 3.7 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 48 
+        gfx.add_triangle_vertex( (  0.3, 4.2 ), ( 0.2, 0.2, 0.2, 1.0 ) ); // 49 
         
         // right rear window
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  1.5, 2.8 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 50 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  1.3, 1.1 ], color: [ 0.0, 0.0, 0.0, 1.0 ] }); // 51 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  1.0, 1.0 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 52 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.9, 2.5 ], color: [ 0.1, 0.1, 0.1, 1.0 ] }); // 53 
+        gfx.add_triangle_vertex( (  1.5, 2.8 ), ( 0.0, 0.0, 0.0, 1.0 ) ); // 50 
+        gfx.add_triangle_vertex( (  1.3, 1.1 ), ( 0.0, 0.0, 0.0, 1.0 ) ); // 51 
+        gfx.add_triangle_vertex( (  1.0, 1.0 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 52 
+        gfx.add_triangle_vertex( (  0.9, 2.5 ), ( 0.1, 0.1, 0.1, 1.0 ) ); // 53 
 
         // tail
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.0, -6.0 ], color: [ 0.8, 0.8, 0.8, 1.0 ] }); // 54 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.5, -8.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 55 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  0.0, -13.0 ], color: [ 0.8, 0.8, 0.8, 1.0 ] }); // 56 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -0.5, -8.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        gfx.add_triangle_vertex( (  0.0, -6.0 ), ( 0.8, 0.8, 0.8, 1.0 ) ); // 54 
+        gfx.add_triangle_vertex( (  0.5, -8.5 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 55 
+        gfx.add_triangle_vertex( (  0.0, -13.0 ), ( 0.8, 0.8, 0.8, 1.0 ) ); // 56 
+        gfx.add_triangle_vertex( ( -0.5, -8.5 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 57 
         
         let mut indices = Vec::new();
 
@@ -703,17 +703,17 @@ impl PlayerShip {
         let mut indices = Vec::new();
         let start_vert = gfx.triangle_backing.len();
         
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -2.0, -11.7 ], color: [ 1.0, 0.3, 0.0, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -2.7, -13.3 ], color: [ 1.0, 1.0, 0.1, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -2.4, -18.4 ], color: [ 0.0, 0.0, 0.0, 0.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -0.4, -13.5 ], color: [ 1.0, 1.0, 0.1, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -0.7, -12.0 ], color: [ 1.0, 0.3, 0.0, 1.0 ] }); // 57 
+        gfx.add_triangle_vertex( ( -2.0, -11.7 ), ( 1.0, 0.3, 0.0, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( -2.7, -13.3 ), ( 1.0, 1.0, 0.1, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( -2.4, -18.4 ), ( 0.0, 0.0, 0.0, 0.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( -0.4, -13.5 ), ( 1.0, 1.0, 0.1, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( -0.7, -12.0 ), ( 1.0, 0.3, 0.0, 1.0 ) ); // 57 
 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 2.0, -11.7 ], color: [ 1.0, 0.3, 0.0, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 2.7, -13.3 ], color: [ 1.0, 1.0, 0.1, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 2.4, -18.4 ], color: [ 0.0, 0.0, 0.0, 0.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 0.4, -13.5 ], color: [ 1.0, 1.0, 0.1, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 0.7, -12.0 ], color: [ 1.0, 0.3, 0.0, 1.0 ] }); // 57 
+        gfx.add_triangle_vertex( ( 2.0, -11.7 ), ( 1.0, 0.3, 0.0, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( 2.7, -13.3 ), ( 1.0, 1.0, 0.1, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( 2.4, -18.4 ), ( 0.0, 0.0, 0.0, 0.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( 0.4, -13.5 ), ( 1.0, 1.0, 0.1, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( 0.7, -12.0 ), ( 1.0, 0.3, 0.0, 1.0 ) ); // 57 
 
         // left exhaust 
         indices.push((start_vert as u32)+0);
@@ -749,11 +749,11 @@ impl PlayerShip {
         let mut indices = Vec::new();
         let start_vert = gfx.triangle_backing.len();
         
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 0.0, 0.0 ], color: [ 0.05, 0.1, 0.1, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 1.0, 0.0 ], color: [ 0.1, 0.15, 0.15, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 1.0, -1.0 ], color: [ 0.2, 0.3, 0.3, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.8, -6.0 ], color: [ 0.1, 0.15, 0.15, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -2.2, -6.0 ], color: [ 0.05, 0.1, 0.1, 1.0 ] }); // 57 
+        gfx.add_triangle_vertex( ( 0.0, 0.0 ), ( 0.05, 0.1, 0.1, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( 1.0, 0.0 ), ( 0.1, 0.15, 0.15, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( 1.0, -1.0 ), ( 0.2, 0.3, 0.3, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( -1.8, -6.0 ), ( 0.1, 0.15, 0.15, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( -2.2, -6.0 ), ( 0.05, 0.1, 0.1, 1.0 ) ); // 57 
 
         indices.push((start_vert as u32)+0);
         indices.push((start_vert as u32)+1);
@@ -775,11 +775,11 @@ impl PlayerShip {
         let mut indices = Vec::new();
         let start_vert = gfx.triangle_backing.len();
         
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 0.0, 0.0 ], color: [ 0.05, 0.1, 0.1, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.0, 0.0 ], color: [ 0.1, 0.15, 0.15, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.0, -1.0 ], color: [ 0.2, 0.3, 0.3, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 1.8, -6.0 ], color: [ 0.1, 0.15, 0.15, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 2.2, -6.0 ], color: [ 0.05, 0.1, 0.1, 1.0 ] }); // 57 
+        gfx.add_triangle_vertex( ( 0.0, 0.0 ), ( 0.05, 0.1, 0.1, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( -1.0, 0.0 ), ( 0.1, 0.15, 0.15, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( -1.0, -1.0 ), ( 0.2, 0.3, 0.3, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( 1.8, -6.0 ), ( 0.1, 0.15, 0.15, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( 2.2, -6.0 ), ( 0.05, 0.1, 0.1, 1.0 ) ); // 57 
         
         indices.push((start_vert as u32)+0);
         indices.push((start_vert as u32)+1);
@@ -802,10 +802,10 @@ impl PlayerShip {
         let mut indices = Vec::new();
         let start_vert = gfx.triangle_backing.len();
         
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 0.0,  0.5 ], color: [ 0.3, 0.3, 0.3, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 1.0, 0.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 1.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -2.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        gfx.add_triangle_vertex( ( 0.0,  0.5 ), ( 0.3, 0.3, 0.3, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( 1.0, 0.0 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( 1.0, -0.5 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( -2.0, -0.5 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 57 
         
         indices.push((start_vert as u32)+0);
         indices.push((start_vert as u32)+1);
@@ -823,10 +823,10 @@ impl PlayerShip {
         let mut indices = Vec::new();
         let start_vert = gfx.triangle_backing.len();
         
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ 0.0, 0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.0, 0.0 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [ -1.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
-        gfx.triangle_backing.push( gfx::GfxTriangleVertex { position: [  2.0, -0.5 ], color: [ 0.5, 0.5, 0.5, 1.0 ] }); // 57 
+        gfx.add_triangle_vertex( ( 0.0, 0.5 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( -1.0, 0.0 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( ( -1.0, -0.5 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 57 
+        gfx.add_triangle_vertex( (  2.0, -0.5 ), ( 0.5, 0.5, 0.5, 1.0 ) ); // 57 
         
         indices.push((start_vert as u32)+0);
         indices.push((start_vert as u32)+1);
