@@ -10,26 +10,6 @@ use glium::index::PrimitiveType;
 
 use std::collections::HashMap;
 
-fn rotate (coord: (f32, f32), angle: f32) -> (f32, f32) {
-    let tx = coord.0*angle.cos() - coord.1*angle.sin();
-    let ty = coord.0*angle.sin() + coord.1*angle.cos();
-    return (tx, ty);
-}
-fn add_points(c1: (f32, f32), c2: (f32, f32)) -> (f32, f32) {
-    return (c1.0 + c2.0, c1.1 + c2.1);
-}
-
-fn scale_point( point: (f32, f32), scale: f32) -> (f32, f32) {
-    return (point.0 * scale, point.1 * scale);
-}
-fn get_distance(c1: (f32, f32), c2: (f32,f32)) -> f32 {
-    return ((c1.0-c2.0).powf(2.0) + (c1.1-c2.1).powf(2.0)).sqrt();
-}
-
-fn get_angle(c1: (f32, f32), c2: (f32,f32)) -> f32 {
-    return f32::atan2(c1.0 - c2.0, 
-                      c1.1 - c2.1);
-}
 
 const ROTATE_LEFT: u32 = 1;
 const ROTATE_RIGHT: u32 = 2;
@@ -278,8 +258,8 @@ impl PlayerShip {
 
     fn gravity(&mut self, planet: &Planet)
     {
-        let distance = get_distance(self.position, planet.position);
-        let angle    = get_angle(self.position, planet.position);
+        let distance = gfx::get_distance(self.position, planet.position);
+        let angle    = gfx::get_angle(self.position, planet.position);
 
         self.scale = 0.2 + (distance-planet.size+0.001)/500.0;
         //self.scale = 0.2;
@@ -362,7 +342,7 @@ impl PlayerShip {
         let mut gear_angle = 0.0f32;
         let mut foot_angle = 0.0f32;
         
-        self.position = add_points(self.position, self.velocity);
+        self.position = gfx::add_points(self.position, self.velocity);
 
         if self.flags & ROTATE_LEFT != 0 {
             self.angle += 0.01;
@@ -416,17 +396,17 @@ impl PlayerShip {
 
         // gear legs
         gfx.change_translation(self.gfx_left_gear_translation, 
-                               add_points(self.position, scale_point(rotate ((-3.0, -7.0), self.angle), self.scale)));
+                               gfx::add_points(self.position, gfx::scale_point(gfx::rotate ((-3.0, -7.0), self.angle), self.scale)));
         gfx.change_translation(self.gfx_right_gear_translation, 
-                               add_points(self.position, scale_point(rotate ((3.0, -7.0), self.angle), self.scale)));
+                               gfx::add_points(self.position, gfx::scale_point(gfx::rotate ((3.0, -7.0), self.angle), self.scale)));
 
         // gear feet
         gfx.change_translation(self.gfx_left_foot_translation, 
-                               add_points(self.position, scale_point(add_points(rotate((-3.0, -7.0), self.angle),
-                                                                                rotate((-2.0, -5.5), self.angle-gear_angle)), self.scale )));
+                               gfx::add_points(self.position, gfx::scale_point(gfx::add_points(gfx::rotate((-3.0, -7.0), self.angle),
+                                                                                gfx::rotate((-2.0, -5.5), self.angle-gear_angle)), self.scale )));
         gfx.change_translation(self.gfx_right_foot_translation, 
-                               add_points(self.position, scale_point(add_points(rotate((3.0, -7.0), self.angle),
-                                                                                rotate((2.0, -5.5), self.angle+gear_angle)), self.scale )));
+                               gfx::add_points(self.position, gfx::scale_point(gfx::add_points(gfx::rotate((3.0, -7.0), self.angle),
+                                                                                gfx::rotate((2.0, -5.5), self.angle+gear_angle)), self.scale )));
 
         gfx.change_rotation(self.gfx_left_gear_rotation, self.angle-gear_angle);
         gfx.change_rotation(self.gfx_right_gear_rotation, self.angle+gear_angle);
@@ -1014,14 +994,14 @@ fn main() {
             _ => ()
         };
         
-        let angle = get_angle(planet.position, player_ship.position);
-        let distance = get_distance(planet.position, player_ship.position);
+        let angle = gfx::get_angle(planet.position, player_ship.position);
+        let distance = gfx::get_distance(planet.position, player_ship.position);
         let midpoint = planet.size + ((distance - planet.size)/2.0);
 
         gfx.change_origin(1, -1.0 * angle.sin()*midpoint, -1.0 * angle.cos()*midpoint);
         gfx.change_scene_scale(0, 0.00005 + (1.0/(distance-planet.size + 10.0))  );
         player_ship.tick(&mut gfx);
-        planet.tick(&mut gfx, get_angle(player_ship.position, planet.position));
+        planet.tick(&mut gfx, gfx::get_angle(player_ship.position, planet.position));
         player_ship.gravity(&planet);
         gfx.run(&mut display);
     });
