@@ -19,6 +19,18 @@ const GEAR_CLOSED_ANGLE: f32 = 1.1;
 const FOOT_CLOSED_ANGLE: f32 = -3.14159/2.0 + 0.45;
 const GEAR_STEPS: u32 = 200;
 
+pub fn render_asset(asset_type: &String, 
+                    asset_subtype: &String, 
+                    asset: &mut assets::asset::Asset, 
+                    gfx: &mut gfx::Gfx,
+                    indices: &mut Vec< u32 >,
+                    distance: f32, 
+                    angle: f32) -> usize {
+    let poly = asset.get_poly(0);
+    return(0);
+
+}
+
 
 
 enum LandingGearState {
@@ -99,6 +111,13 @@ impl Planet {
         gfx.line_draw();
         
         return handles;
+    }
+
+    fn city_block(gfx: &mut gfx::Gfx, 
+                display: &glium::Display, 
+              arc_length: f32, 
+              radius: f32) -> usize {
+        return 0;
     }
 
     fn circle(gfx: &mut gfx::Gfx, 

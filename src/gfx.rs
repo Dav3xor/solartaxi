@@ -1,28 +1,3 @@
-
-//#[macro_use]
-//extern crate glium;
-
-pub fn rotate (coord: (f32, f32), angle: f32) -> (f32, f32) {
-    let tx = coord.0*angle.cos() - coord.1*angle.sin();
-    let ty = coord.0*angle.sin() + coord.1*angle.cos();
-    return (tx, ty);
-}
-pub fn add_points(c1: (f32, f32), c2: (f32, f32)) -> (f32, f32) {
-    return (c1.0 + c2.0, c1.1 + c2.1);
-}
-
-pub fn scale_point( point: (f32, f32), scale: f32) -> (f32, f32) {
-    return (point.0 * scale, point.1 * scale);
-}
-pub fn get_distance(c1: (f32, f32), c2: (f32,f32)) -> f32 {
-    return ((c1.0-c2.0).powf(2.0) + (c1.1-c2.1).powf(2.0)).sqrt();
-}
-
-pub fn get_angle(c1: (f32, f32), c2: (f32,f32)) -> f32 {
-    return f32::atan2(c1.0 - c2.0, 
-                      c1.1 - c2.1);
-}
-
 #[allow(unused_imports)]
 use glium::{glutin, Surface};
 use glium::index::PrimitiveType;
@@ -31,6 +6,33 @@ use std::collections::HashMap;
 
 // GFX constants
 const GFX_SKIP: u32 = 1;
+
+
+pub fn rotate (coord: (f32, f32), 
+               angle: f32) -> (f32, f32) {
+    let tx = coord.0*angle.cos() - coord.1*angle.sin();
+    let ty = coord.0*angle.sin() + coord.1*angle.cos();
+    return (tx, ty);
+}
+pub fn add_points(c1: (f32, f32), 
+                  c2: (f32, f32)) -> (f32, f32) {
+    return (c1.0 + c2.0, c1.1 + c2.1);
+}
+
+pub fn scale_point( point: (f32, f32), 
+                    scale: f32) -> (f32, f32) {
+    return (point.0 * scale, point.1 * scale);
+}
+pub fn get_distance(c1: (f32, f32), 
+                    c2: (f32,f32)) -> f32 {
+    return ((c1.0-c2.0).powf(2.0) + (c1.1-c2.1).powf(2.0)).sqrt();
+}
+
+pub fn get_angle(c1: (f32, f32), 
+                 c2: (f32,f32)) -> f32 {
+    return f32::atan2(c1.0 - c2.0, 
+                      c1.1 - c2.1);
+}
 
 #[derive(Copy, Clone)]
 enum GfxCommandTypes {

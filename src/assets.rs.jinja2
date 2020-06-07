@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 
-mod asset;
+pub mod asset;
 
 
 pub fn build_assets() -> asset::Assets {
