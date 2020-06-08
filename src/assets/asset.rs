@@ -5,9 +5,9 @@ pub struct Assets {
 }
 
 pub struct AssetPolygon {
-    color: (f32, f32, f32),
-    vertices: Vec< (f32, f32) >,
-    drawlist: Vec< u32 >
+    pub color: (f32, f32, f32, f32),
+    pub vertices: Vec< (f32, f32) >,
+    pub drawlist: Vec< u32 >
 }
 
 pub struct AssetType {
@@ -41,7 +41,7 @@ impl Assets {
         
 }
 impl AssetPolygon {
-    pub fn new(color: (f32, f32, f32)) -> AssetPolygon {
+    pub fn new(color: (f32, f32, f32, f32)) -> AssetPolygon {
         let vertices = Vec::new();
         let drawlist = Vec::new();
         AssetPolygon { color: color,
@@ -75,7 +75,7 @@ impl Asset {
         
         Asset { polygons: polygons }
         }
-    pub fn num_polys(&mut self) -> usize {
+    pub fn num_polies(&mut self) -> usize {
         return self.polygons.len()
     }
 

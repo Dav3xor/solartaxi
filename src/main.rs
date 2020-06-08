@@ -19,14 +19,25 @@ const GEAR_CLOSED_ANGLE: f32 = 1.1;
 const FOOT_CLOSED_ANGLE: f32 = -3.14159/2.0 + 0.45;
 const GEAR_STEPS: u32 = 200;
 
-pub fn render_asset(asset_type: &String, 
-                    asset_subtype: &String, 
-                    asset: &mut assets::asset::Asset, 
+pub fn render_asset(asset: &mut assets::asset::Asset, 
                     gfx: &mut gfx::Gfx,
                     indices: &mut Vec< u32 >,
                     distance: f32, 
                     angle: f32) -> usize {
+    let origin =  (angle.sin()*distance, angle.cos()*distance);
     let poly = asset.get_poly(0);
+    
+    let start_vert = gfx.line_len();
+
+    for vertex in &poly.vertices {
+        gfx.add_triangle_vertex( gfx::add_points(origin, gfx::rotate(*vertex, angle)),
+                                 poly.color );
+    }
+
+    for index in &poly.drawlist {
+        indices.push((start_vert as u32)+(*index as u32));
+    }
+        
     return(0);
 
 }

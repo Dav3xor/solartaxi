@@ -13,7 +13,8 @@ pub fn build_assets() -> asset::Assets {
     {% for poly in asset %}
     let mut poly = asset::AssetPolygon::new(({{ poly['style']['fill'][1:3] | int(base=16) / 255.0 }},
                                              {{ poly['style']['fill'][4:6] | int(base=16) / 255.0 }},
-                                             {{ poly['style']['fill'][6:8] | int(base=16) / 255.0 }}) );
+                                             {{ poly['style']['fill'][6:8] | int(base=16) / 255.0 }},
+                                             1.0));
     {% for point in poly['path'] %}
     poly.add_vertex({{ point }});
     {% endfor %}
