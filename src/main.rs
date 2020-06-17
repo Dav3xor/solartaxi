@@ -23,25 +23,33 @@ pub fn render_asset(asset: &mut assets::asset::Asset,
                     gfx: &mut gfx::Gfx,
                     indices: &mut Vec< u32 >,
                     distance: f32, 
-                    angle: f32) -> usize {
+                    angle: f32) {
     let origin =  (angle.sin()*distance, angle.cos()*distance);
     let poly = asset.get_poly(0);
     
-    let start_vert = gfx.line_len();
+    let start_vert = gfx.triangle_len();
 
     for vertex in &poly.vertices {
-        gfx.add_triangle_vertex( gfx::add_points(origin, gfx::rotate(*vertex, angle)),
+        let mut v2 = *vertex;
+        println!("{0} {1}", vertex.0, vertex.1);
+        v2.0 *= 0.1;
+        v2.1 *= 0.1;
+        gfx.add_triangle_vertex( gfx::add_points(origin, gfx::rotate(v2, angle)),
                                  poly.color );
     }
 
     for index in &poly.drawlist {
+        println!("{0} {1}", start_vert, *index);
         indices.push((start_vert as u32)+(*index as u32));
     }
         
-    return(0);
-
 }
 
+fn width_to_angle(width: f32,
+                  radius: f32) -> f32{
+    let circumference = radius * 3.14159 * 2.0;
+    return width/circumference;
+}
 
 
 enum LandingGearState {
@@ -92,14 +100,16 @@ impl Planet {
 
     fn geometry(gfx: &mut gfx::Gfx, 
                 display: &glium::Display,
+                assets: &mut assets::asset::Assets,
                 radius: f32) -> HashMap<String, usize> {
         let mut handles = HashMap::new(); 
 
-        handles.insert("horizon".to_string(),      Planet::circle(gfx, &display, 200, radius));
+        handles.insert("horizon".to_string(),      Planet::circle(gfx, &display, 500, radius));
         handles.insert("sky".to_string(),             Planet::sky(gfx, &display, radius, 16.0, 200));
         handles.insert("mountains".to_string(), Planet::mountains(gfx, &display, tall_mountains, radius*0.3, 1000));
         handles.insert("hills".to_string(),     Planet::mountains(gfx, &display, short_mountains, radius*0.35, 300));
-    
+        handles.insert("foreground".to_string(), Planet::foreground(gfx, &display,  assets, radius));
+
         // draw sky
         gfx.program(1);
         gfx.translate(0.0,0.0);
@@ -116,19 +126,70 @@ impl Planet {
         gfx.indices(handles["hills"]);
         gfx.triangle_draw();
 
-        gfx.program(0);
         gfx.translate(0.0, 0.0);
+        // foreground (cities, etc)
+        gfx.indices(handles["foreground"]);
+        gfx.triangle_draw();
+
+        gfx.program(0);
         gfx.indices(handles["horizon"]);
         gfx.line_draw();
         
         return handles;
     }
 
-    fn city_block(gfx: &mut gfx::Gfx, 
-                display: &glium::Display, 
-              arc_length: f32, 
-              radius: f32) -> usize {
+    fn sidewalks(gfx: &mut gfx::Gfx, 
+                  indices: &mut Vec< u32 >,
+                  start_angle: f32,
+                  arc_length: f32, 
+                  radius: f32) -> usize {
+        let curb_height = 0.07;
+        let curb_base   = 0.15;
+        let start_vert = gfx.triangle_len();
+        gfx.add_triangle_vertex( ( start_angle.sin()*(radius+curb_base), 
+                                   start_angle.cos()*(radius+curb_base) ),
+                                 (0.5, 0.5, 0.5, 1.0));
+        gfx.add_triangle_vertex( ( start_angle.sin()*(radius+curb_base+curb_height), 
+                                   start_angle.cos()*(radius+curb_base+curb_height) ),
+                                 (0.5, 0.5, 0.5, 1.0));
+        gfx.add_triangle_vertex( ( (start_angle+arc_length).sin()*(radius+curb_base), 
+                                   (start_angle+arc_length).cos()*(radius+curb_base) ),
+                                 (0.5, 0.5, 0.5, 1.0));
+        gfx.add_triangle_vertex( ( (start_angle+arc_length).sin()*(radius+curb_base+curb_height), 
+                                   (start_angle+arc_length).cos()*(radius+curb_base+curb_height) ),
+                                 (0.5, 0.5, 0.5, 1.0));
+        indices.push((start_vert as u32)+0);
+        indices.push((start_vert as u32)+1);
+        indices.push((start_vert as u32)+2);
+        indices.push((start_vert as u32)+1);
+        indices.push((start_vert as u32)+2);
+        indices.push((start_vert as u32)+3);
         return 0;
+    }
+
+    fn city_block(gfx: &mut gfx::Gfx, 
+                  indices: &mut Vec< u32 >,
+                  assets: &mut assets::asset::Assets,
+                  start_angle: f32,
+                  arc_length: f32, 
+                  radius: f32) -> usize {
+        let lamppost = assets.get_asset(&"lamppost".to_string(),&"1".to_string());
+
+        render_asset(lamppost, gfx, indices, radius, start_angle);
+        render_asset(lamppost, gfx, indices, radius, start_angle+arc_length);
+        Planet::sidewalks(gfx, indices, start_angle, arc_length, radius);
+        return 0;
+    }
+
+    fn foreground(gfx: &mut gfx::Gfx,
+                  display: &glium::Display,
+                  assets: &mut assets::asset::Assets,
+                  radius: f32) -> usize {
+        let mut indices = Vec::< u32 >::new();
+        Planet::city_block(gfx, &mut indices, assets, 0.0, 0.01, radius);
+        println!("xxxxx");
+        return gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
+        println!("yyyyy");
     }
 
     fn circle(gfx: &mut gfx::Gfx, 
@@ -892,7 +953,7 @@ impl PlayerShip {
 
 }
 fn main() {
-    let assets = assets::build_assets();
+    let mut assets = assets::build_assets();
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
     let cb = glutin::ContextBuilder::new();
@@ -954,7 +1015,6 @@ fn main() {
                                          }";
    
     let mut gfx = gfx::Gfx::new();
-    let mut angle = 0.0f32;
 
 
     //gfx.mountains(&display, tall_mountains, 300.0, 1000);
@@ -970,7 +1030,7 @@ fn main() {
     let mut planet = Planet::new((0.0, 0.0),
                                  1000.0,
                                  1000.0,
-                                 Planet::geometry(&mut gfx, &display, 1000.0));
+                                 Planet::geometry(&mut gfx, &display, &mut assets, 1000.0));
 
     let mut player_ship = PlayerShip::new(PlayerShip::geometry(&mut gfx, &display));
     gfx.run(&display);
@@ -1015,9 +1075,9 @@ fn main() {
                         }
                     }
                 
-                    println!("key: {0} {1} {2}", input.scancode, 
-                                                 if input.state == glutin::event::ElementState::Pressed { "pressed" } else { "released" },
-                                                 is_synthetic);
+                    //println!("key: {0} {1} {2}", input.scancode, 
+                    //                             if input.state == glutin::event::ElementState::Pressed { "pressed" } else { "released" },
+                    //                             is_synthetic);
                 },
                 _ => ()
             },

@@ -35,8 +35,8 @@ impl Assets {
         self.asset_types.get_mut(&asset_type).unwrap().add_asset(asset, asset_subtype);
     }
     
-    pub fn get_asset(&mut self, asset_type: &String, asset_subtype: &String) -> &Asset {
-        return self.asset_types.get(asset_type).unwrap().assets.get(asset_subtype).unwrap();
+    pub fn get_asset(&mut self, asset_type: &String, asset_subtype: &String) -> &mut Asset {
+        return self.asset_types.get_mut(asset_type).unwrap().assets.get_mut(asset_subtype).unwrap();
     }
         
 }

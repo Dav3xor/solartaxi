@@ -9,8 +9,8 @@ pub fn build_assets() -> asset::Assets {
 
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.2823529411764706,
-                                             0.5294117647058824,
-                                             0.0392156862745098,
+                                             0.34509803921568627,
+                                             0.47843137254901963,
                                              1.0));
     poly.add_vertex((-0.26458333, -0.0));
     poly.add_vertex((-0.26458333, 2.910419999999988));
@@ -24,17 +24,19 @@ pub fn build_assets() -> asset::Assets {
     poly.add_vertex((6.350000200000002, 2.6458299999999895));
     poly.add_vertex((0.26458333000000156, 2.6458299999999895));
     poly.add_vertex((0.26458333000000156, -0.0));
+    poly.add_vertex((-0.26458333, -0.0));
 
     poly.add_index(0); poly.add_index(11); poly.add_index(10);
     poly.add_index(8); poly.add_index(7); poly.add_index(6);
     poly.add_index(8); poly.add_index(6); poly.add_index(5);
     poly.add_index(8); poly.add_index(5); poly.add_index(4);
     poly.add_index(8); poly.add_index(4); poly.add_index(3);
-    poly.add_index(1); poly.add_index(0); poly.add_index(10);
     poly.add_index(9); poly.add_index(8); poly.add_index(3);
     poly.add_index(9); poly.add_index(3); poly.add_index(2);
-    poly.add_index(2); poly.add_index(1); poly.add_index(10);
-    poly.add_index(2); poly.add_index(10); poly.add_index(9);
+    poly.add_index(10); poly.add_index(9); poly.add_index(2);
+    poly.add_index(10); poly.add_index(2); poly.add_index(1);
+    poly.add_index(0); poly.add_index(10); poly.add_index(1);
+    poly.add_index(0); poly.add_index(1); poly.add_index(0);
     asset.add_polygon(poly);
 
     assets.add_asset("lamp".to_string(), 
@@ -46,8 +48,8 @@ pub fn build_assets() -> asset::Assets {
 
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.45098039215686275,
-                                             0.9137254901960784,
-                                             0.011764705882352941,
+                                             0.49411764705882355,
+                                             0.5764705882352941,
                                              1.0));
     poly.add_vertex((2.7781248, -0.0));
     poly.add_vertex((2.9104165, 0.1322900000000118));
@@ -66,11 +68,11 @@ pub fn build_assets() -> asset::Assets {
     poly.add_vertex((-2.9104168, 0.9260400000000004));
     poly.add_vertex((-2.9104168, 0.1322900000000118));
     poly.add_vertex((-2.7781251, -0.0));
+    poly.add_vertex((2.7781248, -0.0));
 
-    poly.add_index(16); poly.add_index(0); poly.add_index(1);
-    poly.add_index(16); poly.add_index(1); poly.add_index(2);
-    poly.add_index(16); poly.add_index(2); poly.add_index(3);
-    poly.add_index(16); poly.add_index(3); poly.add_index(4);
+    poly.add_index(0); poly.add_index(1); poly.add_index(2);
+    poly.add_index(0); poly.add_index(2); poly.add_index(3);
+    poly.add_index(0); poly.add_index(3); poly.add_index(4);
     poly.add_index(5); poly.add_index(6); poly.add_index(7);
     poly.add_index(5); poly.add_index(7); poly.add_index(8);
     poly.add_index(5); poly.add_index(8); poly.add_index(9);
@@ -79,14 +81,16 @@ pub fn build_assets() -> asset::Assets {
     poly.add_index(12); poly.add_index(13); poly.add_index(14);
     poly.add_index(12); poly.add_index(14); poly.add_index(15);
     poly.add_index(12); poly.add_index(15); poly.add_index(16);
-    poly.add_index(12); poly.add_index(16); poly.add_index(4);
-    poly.add_index(12); poly.add_index(4); poly.add_index(5);
-    poly.add_index(12); poly.add_index(5); poly.add_index(11);
+    poly.add_index(12); poly.add_index(16); poly.add_index(0);
+    poly.add_index(4); poly.add_index(5); poly.add_index(11);
+    poly.add_index(4); poly.add_index(11); poly.add_index(12);
+    poly.add_index(4); poly.add_index(12); poly.add_index(0);
+    poly.add_index(0); poly.add_index(4); poly.add_index(0);
     asset.add_polygon(poly);
 
     let mut poly = asset::AssetPolygon::new((0.1607843137254902,
-                                             0.1411764705882353,
-                                             0.0196078431372549,
+                                             0.19607843137254902,
+                                             0.27058823529411763,
                                              1.0));
     poly.add_vertex((-6.0000001e-08, 9.921870000000013));
     poly.add_vertex((1.7197915, 9.524999999999977));
@@ -94,11 +98,13 @@ pub fn build_assets() -> asset::Assets {
     poly.add_vertex((-6.0000001e-08, 8.46665999999999));
     poly.add_vertex((-1.8520834, 8.598950000000002));
     poly.add_vertex((-1.5875001, 9.524999999999977));
+    poly.add_vertex((-6.0000001e-08, 9.921870000000013));
 
     poly.add_index(0); poly.add_index(5); poly.add_index(4);
     poly.add_index(0); poly.add_index(4); poly.add_index(3);
     poly.add_index(0); poly.add_index(3); poly.add_index(2);
     poly.add_index(0); poly.add_index(2); poly.add_index(1);
+    poly.add_index(0); poly.add_index(1); poly.add_index(0);
     asset.add_polygon(poly);
 
     assets.add_asset("wastebin".to_string(), 
@@ -110,8 +116,8 @@ pub fn build_assets() -> asset::Assets {
 
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.5098039215686274,
+                                             0.27058823529411763,
                                              0.3333333333333333,
-                                             0.0196078431372549,
                                              1.0));
     poly.add_vertex((1.3229166, -0.0));
     poly.add_vertex((1.3229166, 0.5291700000000219));
@@ -143,9 +149,9 @@ pub fn build_assets() -> asset::Assets {
     poly.add_vertex((-0.7937499299999999, 0.5291700000000219));
     poly.add_vertex((-1.3229165, 0.5291700000000219));
     poly.add_vertex((-1.3229165, -0.0));
+    poly.add_vertex((1.3229166, -0.0));
 
-    poly.add_index(29); poly.add_index(0); poly.add_index(1);
-    poly.add_index(29); poly.add_index(1); poly.add_index(2);
+    poly.add_index(0); poly.add_index(1); poly.add_index(2);
     poly.add_index(3); poly.add_index(4); poly.add_index(5);
     poly.add_index(3); poly.add_index(5); poly.add_index(6);
     poly.add_index(7); poly.add_index(8); poly.add_index(9);
@@ -161,17 +167,19 @@ pub fn build_assets() -> asset::Assets {
     poly.add_index(23); poly.add_index(24); poly.add_index(25);
     poly.add_index(23); poly.add_index(25); poly.add_index(26);
     poly.add_index(27); poly.add_index(28); poly.add_index(29);
-    poly.add_index(29); poly.add_index(2); poly.add_index(3);
+    poly.add_index(27); poly.add_index(29); poly.add_index(0);
     poly.add_index(6); poly.add_index(7); poly.add_index(10);
     poly.add_index(6); poly.add_index(10); poly.add_index(13);
     poly.add_index(6); poly.add_index(13); poly.add_index(16);
     poly.add_index(6); poly.add_index(16); poly.add_index(19);
     poly.add_index(6); poly.add_index(19); poly.add_index(22);
     poly.add_index(22); poly.add_index(23); poly.add_index(26);
-    poly.add_index(27); poly.add_index(29); poly.add_index(3);
+    poly.add_index(26); poly.add_index(27); poly.add_index(0);
     poly.add_index(3); poly.add_index(6); poly.add_index(22);
     poly.add_index(3); poly.add_index(22); poly.add_index(26);
-    poly.add_index(3); poly.add_index(26); poly.add_index(27);
+    poly.add_index(2); poly.add_index(3); poly.add_index(26);
+    poly.add_index(0); poly.add_index(2); poly.add_index(26);
+    poly.add_index(0); poly.add_index(26); poly.add_index(0);
     asset.add_polygon(poly);
 
     assets.add_asset("hydrant".to_string(), 
@@ -183,8 +191,8 @@ pub fn build_assets() -> asset::Assets {
 
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.2823529411764706,
-                                             0.5294117647058824,
-                                             0.0392156862745098,
+                                             0.34509803921568627,
+                                             0.47843137254901963,
                                              1.0));
     poly.add_vertex((0.79375002, -0.0));
     poly.add_vertex((0.79375002, 0.5291700000000219));
@@ -231,8 +239,8 @@ pub fn build_assets() -> asset::Assets {
     poly.add_vertex((-1.0583333000000001, 1.3229199999999537));
     poly.add_vertex((-0.7937500200000002, 0.5291699999999651));
     poly.add_vertex((-0.7937500200000002, -0.0));
+    poly.add_vertex((0.79375002, -0.0));
 
-    poly.add_index(44); poly.add_index(0); poly.add_index(1);
     poly.add_index(4); poly.add_index(5); poly.add_index(6);
     poly.add_index(6); poly.add_index(7); poly.add_index(8);
     poly.add_index(8); poly.add_index(9); poly.add_index(10);
@@ -253,8 +261,7 @@ pub fn build_assets() -> asset::Assets {
     poly.add_index(33); poly.add_index(35); poly.add_index(36);
     poly.add_index(36); poly.add_index(37); poly.add_index(38);
     poly.add_index(38); poly.add_index(39); poly.add_index(40);
-    poly.add_index(43); poly.add_index(44); poly.add_index(1);
-    poly.add_index(43); poly.add_index(1); poly.add_index(2);
+    poly.add_index(43); poly.add_index(44); poly.add_index(0);
     poly.add_index(3); poly.add_index(4); poly.add_index(6);
     poly.add_index(3); poly.add_index(6); poly.add_index(8);
     poly.add_index(8); poly.add_index(11); poly.add_index(13);
@@ -265,16 +272,19 @@ pub fn build_assets() -> asset::Assets {
     poly.add_index(26); poly.add_index(33); poly.add_index(36);
     poly.add_index(26); poly.add_index(36); poly.add_index(38);
     poly.add_index(38); poly.add_index(40); poly.add_index(41);
-    poly.add_index(42); poly.add_index(43); poly.add_index(2);
+    poly.add_index(42); poly.add_index(43); poly.add_index(0);
     poly.add_index(8); poly.add_index(18); poly.add_index(19);
     poly.add_index(25); poly.add_index(26); poly.add_index(38);
+    poly.add_index(41); poly.add_index(42); poly.add_index(0);
     poly.add_index(3); poly.add_index(8); poly.add_index(19);
     poly.add_index(22); poly.add_index(25); poly.add_index(38);
     poly.add_index(22); poly.add_index(38); poly.add_index(41);
     poly.add_index(3); poly.add_index(19); poly.add_index(22);
-    poly.add_index(22); poly.add_index(41); poly.add_index(42);
+    poly.add_index(22); poly.add_index(41); poly.add_index(0);
     poly.add_index(2); poly.add_index(3); poly.add_index(22);
-    poly.add_index(22); poly.add_index(42); poly.add_index(2);
+    poly.add_index(1); poly.add_index(2); poly.add_index(22);
+    poly.add_index(0); poly.add_index(1); poly.add_index(22);
+    poly.add_index(0); poly.add_index(22); poly.add_index(0);
     asset.add_polygon(poly);
 
     assets.add_asset("lamp".to_string(), 
@@ -286,8 +296,8 @@ pub fn build_assets() -> asset::Assets {
 
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.2823529411764706,
-                                             0.5294117647058824,
-                                             0.0392156862745098,
+                                             0.34509803921568627,
+                                             0.47843137254901963,
                                              1.0));
     poly.add_vertex((0.26458333, -0.0));
     poly.add_vertex((0.26458333, 2.6458299999999895));
@@ -299,15 +309,17 @@ pub fn build_assets() -> asset::Assets {
     poly.add_vertex((6.6145835, 2.910419999999988));
     poly.add_vertex((-0.26458333, 2.910419999999988));
     poly.add_vertex((-0.26458333, -0.0));
+    poly.add_vertex((0.26458333, -0.0));
 
-    poly.add_index(9); poly.add_index(0); poly.add_index(1);
     poly.add_index(3); poly.add_index(4); poly.add_index(5);
     poly.add_index(3); poly.add_index(5); poly.add_index(6);
-    poly.add_index(8); poly.add_index(9); poly.add_index(1);
+    poly.add_index(8); poly.add_index(9); poly.add_index(0);
     poly.add_index(2); poly.add_index(3); poly.add_index(6);
     poly.add_index(2); poly.add_index(6); poly.add_index(7);
-    poly.add_index(7); poly.add_index(8); poly.add_index(1);
-    poly.add_index(7); poly.add_index(1); poly.add_index(2);
+    poly.add_index(1); poly.add_index(2); poly.add_index(7);
+    poly.add_index(1); poly.add_index(7); poly.add_index(8);
+    poly.add_index(0); poly.add_index(1); poly.add_index(8);
+    poly.add_index(0); poly.add_index(8); poly.add_index(0);
     asset.add_polygon(poly);
 
     assets.add_asset("lamp".to_string(), 
@@ -319,8 +331,8 @@ pub fn build_assets() -> asset::Assets {
 
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.2823529411764706,
-                                             0.5294117647058824,
-                                             0.0392156862745098,
+                                             0.34509803921568627,
+                                             0.47843137254901963,
                                              1.0));
     poly.add_vertex((0.79375002, -0.0));
     poly.add_vertex((0.79375002, 0.5291700000000219));
@@ -333,16 +345,18 @@ pub fn build_assets() -> asset::Assets {
     poly.add_vertex((-1.5875, 0.7937499999999886));
     poly.add_vertex((-0.79375002, 0.5291700000000219));
     poly.add_vertex((-0.79375002, -0.0));
+    poly.add_vertex((0.79375002, -0.0));
 
-    poly.add_index(10); poly.add_index(0); poly.add_index(1);
     poly.add_index(1); poly.add_index(2); poly.add_index(3);
     poly.add_index(1); poly.add_index(3); poly.add_index(4);
     poly.add_index(4); poly.add_index(5); poly.add_index(6);
     poly.add_index(6); poly.add_index(7); poly.add_index(8);
     poly.add_index(6); poly.add_index(8); poly.add_index(9);
-    poly.add_index(9); poly.add_index(10); poly.add_index(1);
-    poly.add_index(9); poly.add_index(1); poly.add_index(4);
-    poly.add_index(9); poly.add_index(4); poly.add_index(6);
+    poly.add_index(9); poly.add_index(10); poly.add_index(0);
+    poly.add_index(0); poly.add_index(1); poly.add_index(4);
+    poly.add_index(0); poly.add_index(4); poly.add_index(6);
+    poly.add_index(0); poly.add_index(6); poly.add_index(9);
+    poly.add_index(0); poly.add_index(9); poly.add_index(0);
     asset.add_polygon(poly);
 
     assets.add_asset("lamp".to_string(), 
@@ -354,10 +368,10 @@ pub fn build_assets() -> asset::Assets {
 
     let mut asset = asset::Asset::new();
     let mut poly = asset::AssetPolygon::new((0.2823529411764706,
-                                             0.5294117647058824,
-                                             0.0392156862745098,
+                                             0.34509803921568627,
+                                             0.47843137254901963,
                                              1.0));
-    poly.add_vertex((2.1166667, -0.0));
+    poly.add_vertex((2.1166667, 0.0));
     poly.add_vertex((2.1166667, 0.5291700000000219));
     poly.add_vertex((1.3229167000000002, 0.7937500000000455));
     poly.add_vertex((0.7937496400000001, 8.995830000000069));
@@ -368,14 +382,16 @@ pub fn build_assets() -> asset::Assets {
     poly.add_vertex((-0.7937503599999998, 8.995830000000012));
     poly.add_vertex((-1.3229162999999997, 0.7937499999999886));
     poly.add_vertex((-2.1166662999999994, 0.5291699999999651));
+    poly.add_vertex((-2.1166662999999994, 0.0));
 
-    poly.add_index(10); poly.add_index(0); poly.add_index(1);
-    poly.add_index(10); poly.add_index(1); poly.add_index(2);
+    poly.add_index(11); poly.add_index(0); poly.add_index(1);
+    poly.add_index(11); poly.add_index(1); poly.add_index(2);
     poly.add_index(2); poly.add_index(3); poly.add_index(4);
     poly.add_index(4); poly.add_index(5); poly.add_index(6);
     poly.add_index(4); poly.add_index(6); poly.add_index(7);
     poly.add_index(7); poly.add_index(8); poly.add_index(9);
-    poly.add_index(9); poly.add_index(10); poly.add_index(2);
+    poly.add_index(9); poly.add_index(10); poly.add_index(11);
+    poly.add_index(9); poly.add_index(11); poly.add_index(2);
     poly.add_index(2); poly.add_index(4); poly.add_index(7);
     poly.add_index(2); poly.add_index(7); poly.add_index(9);
     asset.add_polygon(poly);

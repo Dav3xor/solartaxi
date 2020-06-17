@@ -17,14 +17,18 @@ template = templateEnv.get_template(TEMPLATE_FILE)
 
 def convert_path(path):
     points = []
+    print (path)
     for i in path:
         points.append((i[0].real * -1.0,
                        (i[0].imag - 297.0) * -1.0))
+    points.append((i[1].real * -1.0,
+                  (i[1].imag - 297.0) * -1.0))
     return points
 
 for svg_file in glob.iglob('art/*.svg'):
     paths, attributes = svg2paths(svg_file)
     obj = []
+    print(svg_file)
     for i in range(len(attributes)):
 
         styles = attributes[i]['style'].split(';')
@@ -40,10 +44,10 @@ for svg_file in glob.iglob('art/*.svg'):
         obj.append(cur_poly);
     objects[svg_file[4:-4]] = obj
 
-print(objects)
+#print(objects)
 
 output = template.render(assets = objects)  # this is where to put args to the template renderer
 
 with open("src/assets.rs", "w") as fh:
     fh.write(output)
-print(output)
+#print(output)
