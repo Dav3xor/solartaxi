@@ -46,11 +46,16 @@ pub fn render_asset(asset: &mut assets::asset::Asset,
 }
 
 fn width_to_angle(width: f32,
-                  radius: f32) -> f32{
+                  radius: f32) -> f32 {
     let circumference = radius * 3.14159 * 2.0;
     return width/circumference;
 }
 
+fn angle_to_width(angle: f32,
+                  radius: f32) -> f32 {
+    let circumference = radius * 3.14159 *2.0;
+    return angle*circumference;
+}
 
 enum LandingGearState {
     Up,
@@ -143,27 +148,85 @@ impl Planet {
                   start_angle: f32,
                   arc_length: f32, 
                   radius: f32) -> usize {
-        let curb_height = 0.07;
+        let curb_height = 0.1;
         let curb_base   = 0.15;
         let start_vert = gfx.triangle_len();
+
+        // the bulk of the sidewalks
         gfx.add_triangle_vertex( ( start_angle.sin()*(radius+curb_base), 
                                    start_angle.cos()*(radius+curb_base) ),
-                                 (0.5, 0.5, 0.5, 1.0));
+                                 (0.3, 0.3, 0.3, 1.0));
         gfx.add_triangle_vertex( ( start_angle.sin()*(radius+curb_base+curb_height), 
                                    start_angle.cos()*(radius+curb_base+curb_height) ),
-                                 (0.5, 0.5, 0.5, 1.0));
+                                 (0.3, 0.3, 0.3, 1.0));
         gfx.add_triangle_vertex( ( (start_angle+arc_length).sin()*(radius+curb_base), 
                                    (start_angle+arc_length).cos()*(radius+curb_base) ),
-                                 (0.5, 0.5, 0.5, 1.0));
+                                 (0.3, 0.3, 0.3, 1.0));
         gfx.add_triangle_vertex( ( (start_angle+arc_length).sin()*(radius+curb_base+curb_height), 
                                    (start_angle+arc_length).cos()*(radius+curb_base+curb_height) ),
-                                 (0.5, 0.5, 0.5, 1.0));
+                                 (0.3, 0.3, 0.3, 1.0));
         indices.push((start_vert as u32)+0);
         indices.push((start_vert as u32)+1);
         indices.push((start_vert as u32)+2);
         indices.push((start_vert as u32)+1);
         indices.push((start_vert as u32)+2);
         indices.push((start_vert as u32)+3);
+
+        // crosswalk ramps
+        let mut crosswalk_ramp = |start: f32, width: f32| {
+            let start_vert = gfx.triangle_len();
+            // left 
+            gfx.add_triangle_vertex( ( (start_angle+width_to_angle(start, radius)).sin()*(radius+curb_base+curb_height), 
+                                       (start_angle+width_to_angle(start, radius)).cos()*(radius+curb_base+curb_height) ),
+                                     (0.4, 0.4, 0.4, 1.0));
+            gfx.add_triangle_vertex( ( (start_angle+width_to_angle(start+(width*0.285), radius)).sin()*(radius+curb_base+curb_height), 
+                                       (start_angle+width_to_angle(start+(width*0.285), radius)).cos()*(radius+curb_base+curb_height) ),
+                                     (0.4, 0.4, 0.4, 1.0));
+            gfx.add_triangle_vertex( ( (start_angle+width_to_angle(start+(width*0.214), radius)).sin()*(radius+curb_base+(curb_height*0.2)), 
+                                       (start_angle+width_to_angle(start+(width*0.214), radius)).cos()*(radius+curb_base+(curb_height*0.2)) ),
+                                     (0.4, 0.4, 0.4, 1.0));
+            
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+           
+            // middle
+            gfx.add_triangle_vertex( ( (start_angle+width_to_angle(start+(width*0.285), radius)).sin()*(radius+curb_base+curb_height), 
+                                       (start_angle+width_to_angle(start+(width*0.285), radius)).cos()*(radius+curb_base+curb_height) ),
+                                     (0.6, 0.6, 0.6, 1.0));
+            gfx.add_triangle_vertex( ( (start_angle+width_to_angle(start+(width*0.214), radius)).sin()*(radius+curb_base+(curb_height*0.2)), 
+                                       (start_angle+width_to_angle(start+(width*0.214), radius)).cos()*(radius+curb_base+(curb_height*0.2)) ),
+                                     (0.6, 0.6, 0.6, 1.0));
+            gfx.add_triangle_vertex( ( (start_angle+width_to_angle(start+(width*0.714), radius)).sin()*(radius+curb_base+curb_height), 
+                                       (start_angle+width_to_angle(start+(width*0.714), radius)).cos()*(radius+curb_base+curb_height) ),
+                                     (0.6, 0.6, 0.6, 1.0));
+            gfx.add_triangle_vertex( ( (start_angle+width_to_angle(start+(width*0.785), radius)).sin()*(radius+curb_base+(curb_height*0.2)), 
+                                       (start_angle+width_to_angle(start+(width*0.785), radius)).cos()*(radius+curb_base+(curb_height*0.2)) ),
+                                     (0.6, 0.6, 0.6, 1.0));
+            indices.push((start_vert as u32)+3);
+            indices.push((start_vert as u32)+4);
+            indices.push((start_vert as u32)+5);
+            indices.push((start_vert as u32)+4);
+            indices.push((start_vert as u32)+5);
+            indices.push((start_vert as u32)+6);
+            
+            // right 
+            gfx.add_triangle_vertex( ( (start_angle+width_to_angle(start+(width*0.714), radius)).sin()*(radius+curb_base+curb_height), 
+                                       (start_angle+width_to_angle(start+(width*0.714), radius)).cos()*(radius+curb_base+curb_height) ),
+                                     (0.8, 0.8, 0.8, 1.0));
+            gfx.add_triangle_vertex( ( (start_angle+width_to_angle(start+width, radius)).sin()*(radius+curb_base+curb_height), 
+                                       (start_angle+width_to_angle(start+width, radius)).cos()*(radius+curb_base+curb_height) ),
+                                     (0.8, 0.8, 0.8, 1.0));
+            gfx.add_triangle_vertex( ( (start_angle+width_to_angle(start+(width*0.785), radius)).sin()*(radius+curb_base+(curb_height*0.2)), 
+                                       (start_angle+width_to_angle(start+(width*0.785), radius)).cos()*(radius+curb_base+(curb_height*0.2)) ),
+                                     (0.8, 0.8, 0.8, 1.0));
+            
+            indices.push((start_vert as u32)+7);
+            indices.push((start_vert as u32)+8);
+            indices.push((start_vert as u32)+9);
+        };
+        crosswalk_ramp(1.5,7.0); 
+        crosswalk_ramp(angle_to_width(arc_length, radius)-8.5, 7.0);
         return 0;
     }
 
@@ -765,7 +828,7 @@ impl PlayerShip {
 
         handles.insert("fuselage".to_string(), 
                        gfx.add_indices(display, &indices, PrimitiveType::TrianglesList));
-
+        
         // exhaust
         let mut indices = Vec::new();
         let start_vert = gfx.triangle_len();
@@ -946,7 +1009,13 @@ impl PlayerShip {
         handles.insert("exhaust_indices".to_string(), gfx.indices(handles["exhaust"]));
         handles.insert("exhaust_draw".to_string(), gfx.triangle_draw());
         
-        
+         
+        gfx.skip(handles["ship_draw"]);
+        gfx.skip(handles["left_gear_draw"]);
+        gfx.skip(handles["right_gear_draw"]);
+        gfx.skip(handles["left_foot_draw"]);
+        gfx.skip(handles["right_foot_draw"]);
+
         return handles;
     }
 
@@ -1089,7 +1158,9 @@ fn main() {
         let midpoint = planet.size + ((distance - planet.size)/2.0);
 
         gfx.change_origin(1, -1.0 * angle.sin()*midpoint, -1.0 * angle.cos()*midpoint);
-        gfx.change_scene_scale(0, 0.00005 + (1.0/(distance-planet.size + 10.0))  );
+        //gfx.change_scene_scale(0, 0.00005 + (1.0/(distance-planet.size + 10.0))  );
+        gfx.change_scene_scale(0, 0.1);
+
         player_ship.tick(&mut gfx);
         planet.tick(&mut gfx, gfx::get_angle(player_ship.position, planet.position));
         player_ship.gravity(&planet);
