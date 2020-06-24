@@ -7,6 +7,10 @@ use std::collections::HashMap;
 // GFX constants
 const GFX_SKIP: u32 = 1;
 
+pub fn place (angle: f32, 
+              distance: f32) -> (f32, f32) {
+    return (angle.sin()*distance, angle.cos()*distance);
+}
 
 pub fn rotate (coord: (f32, f32), 
                angle: f32) -> (f32, f32) {
