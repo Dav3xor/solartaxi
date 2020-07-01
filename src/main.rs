@@ -10,7 +10,6 @@ use glium::index::PrimitiveType;
 
 use std::collections::HashMap;
 
-
 const ROTATE_LEFT: u32 = 1;
 const ROTATE_RIGHT: u32 = 2;
 const THRUST_ON: u32 = 4;
@@ -32,7 +31,6 @@ pub fn render_asset(asset: &mut assets::asset::Asset,
 
     for vertex in &poly.vertices {
         let mut v2 = *vertex;
-        println!("{0} {1}", vertex.0, vertex.1);
         v2.0 *= 0.1;
         v2.1 *= 0.1;
         gfx.add_triangle_vertex( gfx::add_points(origin, gfx::rotate(v2, angle * -1.0)),
@@ -40,7 +38,6 @@ pub fn render_asset(asset: &mut assets::asset::Asset,
     }
 
     for index in &poly.drawlist {
-        println!("{0} {1}", start_vert, *index);
         indices.push((start_vert as u32)+(*index as u32));
     }
         
@@ -144,17 +141,82 @@ impl Planet {
         return handles;
     }
 
+    fn window(gfx: &mut gfx::Gfx, 
+              indices: &mut Vec< u32 >,
+              line_indices: &mut Vec< u32 >,
+              start_angle: f32,
+              arc_length: f32, 
+              radius: f32) -> usize {
+        return 0;
+    }
+
+    fn downtown_building(gfx: &mut gfx::Gfx, 
+                         indices: &mut Vec< u32 >,
+                         line_indices: &mut Vec< u32 >,
+                         start_angle: f32,
+                         arc_length: f32, 
+                         radius: f32) -> usize {
+        let building_height = 2.0;
+        let start_vert = gfx.triangle_len();
+
+        let num_steps = ((angle_to_width(arc_length, radius)/20.0).floor() as u32) + 1;
+        let step_width = arc_length / (num_steps as f32);
+        
+        gfx.add_triangle_vertex( gfx::place(start_angle, radius), 
+                                 (0.3, 0.05, 0.05, 1.0));
+        gfx.add_triangle_vertex( gfx::place(start_angle, radius+building_height), 
+                                 (0.2, 0.045, 0.045, 1.0));
+
+        for i in 1..(num_steps+1) {
+
+            gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius), 
+                                     (0.2, 0.045, 0.045, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius+building_height), 
+                                     (0.3, 0.05, 0.05, 1.0));
+            indices.push((start_vert as u32)+(i*2 - 2));
+            indices.push((start_vert as u32)+(i*2 - 1));
+            indices.push((start_vert as u32)+(i*2));
+            indices.push((start_vert as u32)+(i*2 - 1));
+            indices.push((start_vert as u32)+(i*2));
+            indices.push((start_vert as u32)+(i*2 +1));
+        }
+        return 0;
+    }
+
+    fn small_city_buildings(gfx: &mut gfx::Gfx, 
+                            indices: &mut Vec< u32 >,
+                            line_indices: &mut Vec< u32 >,
+                            start_angle: f32,
+                            arc_length: f32, 
+                            radius: f32) -> usize {
+        Planet::downtown_building(gfx, indices, line_indices, start_angle, arc_length, radius);
+        return 0;
+    }
+
     fn sidewalks(gfx: &mut gfx::Gfx, 
-                  indices: &mut Vec< u32 >,
-                  start_angle: f32,
-                  arc_length: f32, 
-                  radius: f32) -> usize {
+                 indices: &mut Vec< u32 >,
+                 line_indices: &mut Vec< u32 >,
+                 contents: fn(&mut gfx::Gfx, 
+                                   &mut Vec< u32 >,
+                                   &mut Vec< u32 >,
+                                   f32,
+                                   f32, 
+                                   f32) -> usize,
+                 start_angle: f32,
+                 arc_length: f32, 
+                 radius: f32) -> usize {
         let curb_height = 0.1;
         let curb_base   = 0.15;
+        let sidewalk_width = 12.0;
+
         let start_vert = gfx.triangle_len();
 
         let num_steps = 5;
         let step_width = arc_length / (num_steps as f32);
+
+
+        // first render the contents
+
 
         // the bulk of the sidewalks
         gfx.add_triangle_vertex( gfx::place(start_angle, radius+curb_base),
@@ -227,14 +289,63 @@ impl Planet {
             indices.push((start_vert as u32)+7);
             indices.push((start_vert as u32)+8);
             indices.push((start_vert as u32)+9);
+            
+            // crosswalk stripe (left)
+            let start_vert = gfx.triangle_len();
+            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+0.3, radius), 
+                                                radius+curb_base-0.02), 
+                                     (0.8, 0.8, 0.8, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start-0.4, radius), 
+                                                radius+curb_base-0.14), 
+                                     (0.8, 0.8, 0.8, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+1.6, radius), 
+                                                radius+curb_base-0.14), 
+                                     (0.8, 0.8, 0.8, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+1.9, radius), 
+                                                radius+curb_base-0.02), 
+                                     (0.8, 0.8, 0.8, 1.0));
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+3);
+        
+            // crosswalk stripe (right)
+            let start_vert = gfx.triangle_len();
+            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width-0.3, radius), 
+                                                radius+curb_base-0.02), 
+                                     (0.8, 0.8, 0.8, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width+0.4, radius), 
+                                                radius+curb_base-0.14), 
+                                     (0.8, 0.8, 0.8, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width-1.6, radius), 
+                                                radius+curb_base-0.14), 
+                                     (0.8, 0.8, 0.8, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width-2.0, radius), 
+                                                radius+curb_base-0.02), 
+                                     (0.8, 0.8, 0.8, 1.0));
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+3);
         };
-        crosswalk_ramp(1.5,7.0); 
-        crosswalk_ramp(angle_to_width(arc_length, radius)-8.5, 7.0);
+        crosswalk_ramp(4.5,7.0); 
+        crosswalk_ramp(angle_to_width(arc_length, radius)-11.5, 7.0);
+
+        contents(gfx, indices, line_indices,
+                 start_angle+width_to_angle(sidewalk_width,radius), 
+                 arc_length-width_to_angle(sidewalk_width*2.0, radius), 
+                 radius+curb_base+curb_height);
+
         return 0;
     }
 
     fn block(gfx: &mut gfx::Gfx, 
              indices: &mut Vec< u32 >,
+             line_indices: &mut Vec< u32 >,
              assets: &mut assets::asset::Assets,
              start_angle: f32,
              arc_length: f32, 
@@ -298,7 +409,7 @@ impl Planet {
 
 
         // TODO: handle different kinds of blocks
-        Planet::city_block(gfx, indices, assets, 
+        Planet::city_block(gfx, indices, line_indices, assets, 
                            start_angle + width_to_angle(20.0, radius), 
                            arc_length - width_to_angle(20.0, radius), radius);
 
@@ -307,15 +418,20 @@ impl Planet {
 
     fn city_block(gfx: &mut gfx::Gfx, 
                   indices: &mut Vec< u32 >,
+                  line_indices: &mut Vec< u32 >,
                   assets: &mut assets::asset::Assets,
                   start_angle: f32,
                   arc_length: f32, 
                   radius: f32) -> usize {
         let lamppost = assets.get_asset(&"lamppost".to_string(),&"1".to_string());
 
-        render_asset(lamppost, gfx, indices, radius+0.25, start_angle+width_to_angle(2.5,radius));
-        render_asset(lamppost, gfx, indices, radius+0.25, start_angle+arc_length-width_to_angle(2.5,radius));
-        Planet::sidewalks(gfx, indices, start_angle, arc_length, radius);
+        render_asset(lamppost, gfx, indices, radius+0.25, 
+                     start_angle+width_to_angle(2.5,radius));
+        render_asset(lamppost, gfx, indices, radius+0.25, 
+                     start_angle+arc_length-width_to_angle(2.5,radius));
+        Planet::sidewalks(gfx, indices, line_indices, 
+                          Planet::small_city_buildings, 
+                          start_angle, arc_length, radius);
         return 0;
     }
 
@@ -324,10 +440,9 @@ impl Planet {
                   assets: &mut assets::asset::Assets,
                   radius: f32) -> usize {
         let mut indices = Vec::< u32 >::new();
-        Planet::block(gfx, &mut indices, assets, 0.0, width_to_angle(100.0, radius), radius);
-        println!("xxxxx");
+        let mut line_indices = Vec::< u32 >::new();
+        Planet::block(gfx, &mut indices, &mut line_indices, assets, 0.0, width_to_angle(100.0, radius), radius);
         return gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
-        println!("yyyyy");
     }
 
     fn circle(gfx: &mut gfx::Gfx, 
@@ -1235,7 +1350,7 @@ fn main() {
 
         gfx.change_origin(1, -1.0 * angle.sin()*midpoint, -1.0 * angle.cos()*midpoint);
         //gfx.change_scene_scale(0, 0.00005 + (1.0/(distance-planet.size + 10.0))  );
-        gfx.change_scene_scale(0, 0.3);
+        gfx.change_scene_scale(0, 0.2);
 
         player_ship.tick(&mut gfx);
         planet.tick(&mut gfx, gfx::get_angle(player_ship.position, planet.position));
