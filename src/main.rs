@@ -61,6 +61,14 @@ enum LandingGearState {
     Opening(u32),
     Closing(u32)
 }
+
+
+enum WindowStyle {
+    Plain,
+    FourPane,
+    RoundTop,
+}
+
 struct Planet {
     position: (f32, f32),
     velocity: (f32, f32),
@@ -101,454 +109,573 @@ impl Planet {
                                angle.cos()*(self.size - (self.size*0.3))));
     }
 
-    fn geometry(gfx: &mut gfx::Gfx, 
-                display: &glium::Display,
-                assets: &mut assets::asset::Assets,
-                radius: f32) -> HashMap<String, usize> {
-        let mut handles = HashMap::new(); 
+        fn geometry(gfx: &mut gfx::Gfx, 
+                    display: &glium::Display,
+                    assets: &mut assets::asset::Assets,
+                    radius: f32) -> HashMap<String, usize> {
+            let mut handles = HashMap::new(); 
 
-        handles.insert("horizon".to_string(),      Planet::circle(gfx, &display, 500, radius));
-        handles.insert("sky".to_string(),             Planet::sky(gfx, &display, radius, 16.0, 1000));
-        handles.insert("mountains".to_string(), Planet::mountains(gfx, &display, tall_mountains, radius*0.3, 1500));
-        handles.insert("hills".to_string(),     Planet::mountains(gfx, &display, short_mountains, radius*0.35, 1000));
-        handles.insert("foreground".to_string(), Planet::foreground(gfx, &display,  assets, radius));
+            handles.insert("horizon".to_string(),      
+                           Planet::circle(gfx, &display, 500, radius));
+            handles.insert("sky".to_string(),             
+                           Planet::sky(gfx, &display, radius, 16.0, 1000));
+            handles.insert("mountains".to_string(), 
+                           Planet::mountains(gfx, &display, tall_mountains, radius*0.3, 1500));
+            handles.insert("hills".to_string(),     
+                           Planet::mountains(gfx, &display, short_mountains, radius*0.35, 1000));
+           
+            let foreground = Planet::foreground(gfx, &display,  assets, radius);
+            handles.insert("foreground".to_string(), foreground.0);
+            handles.insert("foreground_lines".to_string(), foreground.1);
 
-        // draw sky
-        gfx.program(1);
-        gfx.translate(0.0,0.0);
-        gfx.indices(handles["sky"]);
-        gfx.triangle_draw();
+            // draw sky
+            gfx.program(1);
+            gfx.translate(0.0,0.0);
+            gfx.indices(handles["sky"]);
+            gfx.triangle_draw();
 
-        // tall mountains
-        handles.insert("mountains_trans".to_string(), gfx.translate(0.0,radius - (0.3 * radius)));
-        gfx.indices(handles["mountains"]);
-        gfx.triangle_draw();
+            // tall mountains
+            handles.insert("mountains_trans".to_string(), gfx.translate(0.0,radius - (0.3 * radius)));
+            gfx.indices(handles["mountains"]);
+            gfx.triangle_draw();
 
-        // hills
-        handles.insert("hills_trans".to_string(), gfx.translate(0.0,radius - (0.35 * radius)));
-        gfx.indices(handles["hills"]);
-        gfx.triangle_draw();
+            // hills
+            handles.insert("hills_trans".to_string(), gfx.translate(0.0,radius - (0.35 * radius)));
+            gfx.indices(handles["hills"]);
+            gfx.triangle_draw();
 
-        gfx.translate(0.0, 0.0);
-        // foreground (cities, etc)
-        gfx.indices(handles["foreground"]);
-        gfx.triangle_draw();
+            gfx.translate(0.0, 0.0);
+            // foreground (cities, etc)
+            gfx.indices(handles["foreground"]);
+            gfx.triangle_draw();
 
-        gfx.program(0);
-        gfx.indices(handles["horizon"]);
-        gfx.line_draw();
-        
-        return handles;
-    }
-
-    fn window(gfx: &mut gfx::Gfx, 
-              indices: &mut Vec< u32 >,
-              line_indices: &mut Vec< u32 >,
-              start_angle: f32,
-              arc_length: f32, 
-              radius: f32) -> usize {
-        return 0;
-    }
-
-    fn downtown_building(gfx: &mut gfx::Gfx, 
-                         indices: &mut Vec< u32 >,
-                         line_indices: &mut Vec< u32 >,
-                         start_angle: f32,
-                         arc_length: f32, 
-                         radius: f32) -> usize {
-        let building_height = 2.0;
-        let start_vert = gfx.triangle_len();
-
-        let num_steps = ((angle_to_width(arc_length, radius)/20.0).floor() as u32) + 1;
-        let step_width = arc_length / (num_steps as f32);
-        
-        gfx.add_triangle_vertex( gfx::place(start_angle, radius), 
-                                 (0.3, 0.05, 0.05, 1.0));
-        gfx.add_triangle_vertex( gfx::place(start_angle, radius+building_height), 
-                                 (0.2, 0.045, 0.045, 1.0));
-
-        for i in 1..(num_steps+1) {
-
-            gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius), 
-                                     (0.2, 0.045, 0.045, 1.0));
-            gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius+building_height), 
-                                     (0.3, 0.05, 0.05, 1.0));
-            indices.push((start_vert as u32)+(i*2 - 2));
-            indices.push((start_vert as u32)+(i*2 - 1));
-            indices.push((start_vert as u32)+(i*2));
-            indices.push((start_vert as u32)+(i*2 - 1));
-            indices.push((start_vert as u32)+(i*2));
-            indices.push((start_vert as u32)+(i*2 +1));
+            gfx.program(0);
+            gfx.indices(handles["foreground_lines"]);
+            gfx.line_draw();
+            gfx.indices(handles["horizon"]);
+            gfx.line_draw();
+            
+            return handles;
         }
-        return 0;
-    }
 
-    fn small_city_buildings(gfx: &mut gfx::Gfx, 
-                            indices: &mut Vec< u32 >,
-                            line_indices: &mut Vec< u32 >,
-                            start_angle: f32,
-                            arc_length: f32, 
-                            radius: f32) -> usize {
-        Planet::downtown_building(gfx, indices, line_indices, start_angle, arc_length, radius);
-        return 0;
-    }
+        fn window(gfx: &mut gfx::Gfx, 
+                  indices: &mut Vec< u32 >,
+                  line_indices: &mut Vec< u32 >,
+                  angle: f32,
+                  radius: f32,
+                  extents: (f32, f32),
+                  style: WindowStyle,
+                  ) -> usize {
 
-    fn sidewalks(gfx: &mut gfx::Gfx, 
+            let darker_color      = (0.01, 0.02, 0.05, 1.0);
+            let lighter_color     = (0.12, 0.16, 0.4, 1.0);
+            let trim_color        = (0.8, 0.8, 0.8, 1.0);
+            let shaded_trim_color = (0.3, 0.3, 0.3, 1.0);
+            let sill_height   = 0.06;
+            let window_inset  = 0.5;
+
+
+            // window pane
+            let start_vert    = gfx.triangle_len();
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(window_inset, radius), radius+sill_height), 
+                                     darker_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(window_inset, radius), radius+extents.1-sill_height), 
+                                     (0.0, 0.0, 0.0, 1.0));
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0-window_inset, radius), radius+sill_height), 
+                                     lighter_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0-window_inset, radius), radius+extents.1), 
+                                     darker_color);
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+3);
+           
+            // lower sill
+            let start_vert    = gfx.triangle_len();
+            gfx.add_triangle_vertex( gfx::place(angle, radius), 
+                                     trim_color);
+            gfx.add_triangle_vertex( gfx::place(angle, radius+sill_height), 
+                                     trim_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0, radius), radius), 
+                                     trim_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0, radius), radius+sill_height), 
+                                     trim_color);
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+3);
+            
+            // lower sill 2
+            let start_vert    = gfx.triangle_len();
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(window_inset*0.6, radius), radius), 
+                                     shaded_trim_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(window_inset*0.6, radius), radius-(sill_height*1.2)), 
+                                     shaded_trim_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0-(window_inset*0.6), radius), radius), 
+                                     shaded_trim_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0-(window_inset*0.6), radius), radius-(sill_height*1.2)), 
+                                     shaded_trim_color);
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+3);
+
+            // upper sill
+            let start_vert    = gfx.triangle_len();
+            gfx.add_triangle_vertex( gfx::place(angle, radius+extents.1-sill_height), 
+                                     trim_color);
+            gfx.add_triangle_vertex( gfx::place(angle, radius+extents.1), 
+                                     trim_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0, radius), radius+extents.1-sill_height), 
+                                     trim_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0, radius), radius+extents.1), 
+                                     trim_color);
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+3);
+
+            let start_vert = gfx.line_len();
+            gfx.add_line_vertex( gfx::place(angle+width_to_angle(window_inset, radius), radius+sill_height));
+            gfx.add_line_vertex( gfx::place(angle+width_to_angle(window_inset, radius), radius+extents.1-sill_height));
+            gfx.add_line_vertex( gfx::place(angle+width_to_angle(extents.0-window_inset, radius),radius+sill_height));
+            gfx.add_line_vertex( gfx::place(angle+width_to_angle(extents.0-window_inset, radius+extents.1),radius+extents.1-sill_height));
+
+            line_indices.push((start_vert as u32)+0);
+            line_indices.push((start_vert as u32)+1);
+            line_indices.push((start_vert as u32)+1);
+            line_indices.push((start_vert as u32)+3);
+            line_indices.push((start_vert as u32)+2);
+            line_indices.push((start_vert as u32)+0);
+            line_indices.push((start_vert as u32)+3);
+            line_indices.push((start_vert as u32)+2);
+            
+            return 0;
+        }
+
+        fn downtown_building(gfx: &mut gfx::Gfx, 
+                             indices: &mut Vec< u32 >,
+                             line_indices: &mut Vec< u32 >,
+                             start_angle: f32,
+                             arc_length: f32, 
+                             radius: f32) -> usize {
+            let building_height = 2.0;
+            let start_vert = gfx.triangle_len();
+
+            let num_steps = ((angle_to_width(arc_length, radius)/20.0).floor() as u32) + 1;
+            let step_width = arc_length / (num_steps as f32);
+            
+            gfx.add_triangle_vertex( gfx::place(start_angle, radius), 
+                                     (0.3, 0.05, 0.05, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle, radius+building_height), 
+                                     (0.2, 0.045, 0.045, 1.0));
+
+            for i in 1..(num_steps+1) {
+
+                gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius), 
+                                         (0.2, 0.045, 0.045, 1.0));
+                gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius+building_height), 
+                                         (0.3, 0.05, 0.05, 1.0));
+                indices.push((start_vert as u32)+(i*2 - 2));
+                indices.push((start_vert as u32)+(i*2 - 1));
+                indices.push((start_vert as u32)+(i*2));
+                indices.push((start_vert as u32)+(i*2 - 1));
+                indices.push((start_vert as u32)+(i*2));
+                indices.push((start_vert as u32)+(i*2 +1));
+
+            }
+
+
+            // windows, have to run the loop again...
+            for i in 1..(num_steps+1) {
+                Planet::window(gfx, indices, line_indices, 
+                               start_angle+(step_width*(i as f32)-step_width+(step_width*0.05)), 
+                               radius + 0.4, (7.8, 0.8), WindowStyle::Plain);
+                Planet::window(gfx, indices, line_indices, 
+                               start_angle+(step_width*(i as f32)-(step_width*0.5)+(step_width*0.05)), 
+                               radius + 0.4, (7.8, 0.8), WindowStyle::Plain);
+            }
+
+            return 0;
+        }
+
+        fn small_city_buildings(gfx: &mut gfx::Gfx, 
+                                indices: &mut Vec< u32 >,
+                                line_indices: &mut Vec< u32 >,
+                                start_angle: f32,
+                                arc_length: f32, 
+                                radius: f32) -> usize {
+            Planet::downtown_building(gfx, indices, line_indices, start_angle, arc_length, radius);
+            return 0;
+        }
+
+        fn sidewalks(gfx: &mut gfx::Gfx, 
+                     indices: &mut Vec< u32 >,
+                     line_indices: &mut Vec< u32 >,
+                     contents: fn(&mut gfx::Gfx, 
+                                       &mut Vec< u32 >,
+                                       &mut Vec< u32 >,
+                                       f32,
+                                       f32, 
+                                       f32) -> usize,
+                     start_angle: f32,
+                     arc_length: f32, 
+                     radius: f32) -> usize {
+            let curb_height = 0.1;
+            let curb_base   = 0.15;
+            let sidewalk_width = 12.0;
+
+            let start_vert = gfx.triangle_len();
+
+            let num_steps = 5;
+            let step_width = arc_length / (num_steps as f32);
+
+
+            // first render the contents
+
+
+            // the bulk of the sidewalks
+            gfx.add_triangle_vertex( gfx::place(start_angle, radius+curb_base),
+                                     (0.3, 0.3, 0.3, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle, radius+curb_base+curb_height), 
+                                     (0.3, 0.3, 0.3, 1.0));
+
+            for i in 1..(num_steps+1) {
+                gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius+curb_base), 
+                                         (0.3, 0.3, 0.3, 1.0));
+                gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius+curb_base+curb_height), 
+                                         (0.3, 0.3, 0.3, 1.0));
+                indices.push((start_vert as u32)+(i*2 - 2));
+                indices.push((start_vert as u32)+(i*2 - 1));
+                indices.push((start_vert as u32)+(i*2));
+                indices.push((start_vert as u32)+(i*2 - 1));
+                indices.push((start_vert as u32)+(i*2));
+                indices.push((start_vert as u32)+(i*2 + 1));
+            }
+
+            // crosswalk ramps
+            let mut crosswalk_ramp = |start: f32, width: f32| {
+                let start_vert = gfx.triangle_len();
+                // left 
+                gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start, radius), 
+                                                    radius+curb_base+curb_height), 
+                                         (0.4, 0.4, 0.4, 1.0));
+                gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+(width*0.285), radius), 
+                                                     radius+curb_base+curb_height), 
+                                         (0.4, 0.4, 0.4, 1.0));
+                gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+(width*0.214), radius), 
+                                                    radius+curb_base+(curb_height*0.2)), 
+                                         (0.4, 0.4, 0.4, 1.0));
+                
+                indices.push((start_vert as u32)+0);
+                indices.push((start_vert as u32)+1);
+                indices.push((start_vert as u32)+2);
+               
+                // middle
+                gfx.add_triangle_vertex(   gfx::place(start_angle+width_to_angle(start+(width*0.285), radius), 
+                                                      radius+curb_base+curb_height), 
+                                         (0.5, 0.5, 0.5, 1.0));
+                gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+(width*0.214), radius), 
+                                                     radius+curb_base+(curb_height*0.2)), 
+                                         (0.5, 0.5, 0.5, 1.0));
+                gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+(width*0.714), radius), 
+                                                     radius+curb_base+curb_height), 
+                                         (0.5, 0.5, 0.5, 1.0));
+                gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+(width*0.785), radius), 
+                                                     radius+curb_base+(curb_height*0.2)), 
+                                         (0.5, 0.5, 0.5, 1.0));
+                indices.push((start_vert as u32)+3);
+                indices.push((start_vert as u32)+4);
+                indices.push((start_vert as u32)+5);
+                indices.push((start_vert as u32)+4);
+                indices.push((start_vert as u32)+5);
+                indices.push((start_vert as u32)+6);
+                
+                // right 
+                gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+(width*0.714), radius), 
+                                                     radius+curb_base+curb_height), 
+                                         (0.65, 0.65, 0.65, 1.0));
+                gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+width, radius), 
+                                                     radius+curb_base+curb_height), 
+                                         (0.65, 0.65, 0.65, 1.0));
+                gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+(width*0.785), radius), 
+                                                     radius+curb_base+(curb_height*0.2)), 
+                                         (0.65, 0.65, 0.65, 1.0));
+                
+                indices.push((start_vert as u32)+7);
+                indices.push((start_vert as u32)+8);
+                indices.push((start_vert as u32)+9);
+                
+                // crosswalk stripe (left)
+                let start_vert = gfx.triangle_len();
+                gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+0.3, radius), 
+                                                    radius+curb_base-0.02), 
+                                         (0.8, 0.8, 0.8, 1.0));
+                gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start-0.4, radius), 
+                                                    radius+curb_base-0.14), 
+                                         (0.8, 0.8, 0.8, 1.0));
+                gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+1.6, radius), 
+                                                    radius+curb_base-0.14), 
+                                         (0.8, 0.8, 0.8, 1.0));
+                gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+1.9, radius), 
+                                                    radius+curb_base-0.02), 
+                                         (0.8, 0.8, 0.8, 1.0));
+                indices.push((start_vert as u32)+0);
+                indices.push((start_vert as u32)+1);
+                indices.push((start_vert as u32)+2);
+                indices.push((start_vert as u32)+0);
+                indices.push((start_vert as u32)+2);
+                indices.push((start_vert as u32)+3);
+            
+                // crosswalk stripe (right)
+                let start_vert = gfx.triangle_len();
+                gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width-0.3, radius), 
+                                                    radius+curb_base-0.02), 
+                                         (0.8, 0.8, 0.8, 1.0));
+                gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width+0.4, radius), 
+                                                    radius+curb_base-0.14), 
+                                         (0.8, 0.8, 0.8, 1.0));
+                gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width-1.6, radius), 
+                                                    radius+curb_base-0.14), 
+                                         (0.8, 0.8, 0.8, 1.0));
+                gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width-2.0, radius), 
+                                                    radius+curb_base-0.02), 
+                                         (0.8, 0.8, 0.8, 1.0));
+                indices.push((start_vert as u32)+0);
+                indices.push((start_vert as u32)+1);
+                indices.push((start_vert as u32)+2);
+                indices.push((start_vert as u32)+0);
+                indices.push((start_vert as u32)+2);
+                indices.push((start_vert as u32)+3);
+            };
+            crosswalk_ramp(4.5,7.0); 
+            crosswalk_ramp(angle_to_width(arc_length, radius)-11.5, 7.0);
+
+            contents(gfx, indices, line_indices,
+                     start_angle+width_to_angle(sidewalk_width,radius), 
+                     arc_length-width_to_angle(sidewalk_width*2.0, radius), 
+                     radius+curb_base+curb_height);
+
+            return 0;
+        }
+
+        fn block(gfx: &mut gfx::Gfx, 
                  indices: &mut Vec< u32 >,
                  line_indices: &mut Vec< u32 >,
-                 contents: fn(&mut gfx::Gfx, 
-                                   &mut Vec< u32 >,
-                                   &mut Vec< u32 >,
-                                   f32,
-                                   f32, 
-                                   f32) -> usize,
+                 assets: &mut assets::asset::Assets,
                  start_angle: f32,
                  arc_length: f32, 
                  radius: f32) -> usize {
-        let curb_height = 0.1;
-        let curb_base   = 0.15;
-        let sidewalk_width = 12.0;
+            // road
+            let road_height = 0.15;
+            let road_width  = width_to_angle(20.0, radius);
+            let start_vert  = gfx.triangle_len();
 
-        let start_vert = gfx.triangle_len();
-
-        let num_steps = 5;
-        let step_width = arc_length / (num_steps as f32);
-
-
-        // first render the contents
+            let num_steps   = 5;
+            let step_width  = arc_length / (num_steps as f32);
 
 
-        // the bulk of the sidewalks
-        gfx.add_triangle_vertex( gfx::place(start_angle, radius+curb_base),
-                                 (0.3, 0.3, 0.3, 1.0));
-        gfx.add_triangle_vertex( gfx::place(start_angle, radius+curb_base+curb_height), 
-                                 (0.3, 0.3, 0.3, 1.0));
 
-        for i in 1..(num_steps+1) {
-            gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius+curb_base), 
-                                     (0.3, 0.3, 0.3, 1.0));
-            gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius+curb_base+curb_height), 
-                                     (0.3, 0.3, 0.3, 1.0));
-            indices.push((start_vert as u32)+(i*2 - 2));
-            indices.push((start_vert as u32)+(i*2 - 1));
-            indices.push((start_vert as u32)+(i*2));
-            indices.push((start_vert as u32)+(i*2 - 1));
-            indices.push((start_vert as u32)+(i*2));
-            indices.push((start_vert as u32)+(i*2 + 1));
-        }
 
-        // crosswalk ramps
-        let mut crosswalk_ramp = |start: f32, width: f32| {
-            let start_vert = gfx.triangle_len();
-            // left 
-            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start, radius), 
-                                                radius+curb_base+curb_height), 
-                                     (0.4, 0.4, 0.4, 1.0));
-            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+(width*0.285), radius), 
-                                                 radius+curb_base+curb_height), 
-                                     (0.4, 0.4, 0.4, 1.0));
-            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+(width*0.214), radius), 
-                                                radius+curb_base+(curb_height*0.2)), 
-                                     (0.4, 0.4, 0.4, 1.0));
-            
+            gfx.add_triangle_vertex( gfx::place(start_angle, radius),
+                                     (0.05, 0.05, 0.05, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle, radius+road_height), 
+                                     (0.05, 0.05, 0.05, 1.0));
+
+            // cross road crown
+            gfx.add_triangle_vertex( gfx::place(start_angle + width_to_angle(7.0,radius), radius+road_height+0.05),
+                                     (0.05, 0.05, 0.05, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle + width_to_angle(13.0, radius), radius+road_height+0.05),
+                                     (0.05, 0.05, 0.05, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle + width_to_angle(20.0, radius), radius),
+                                     (0.05, 0.05, 0.05, 1.0));
+            gfx.add_triangle_vertex( gfx::place(start_angle + width_to_angle(20.0, radius), radius+road_height),
+                                     (0.05, 0.05, 0.05, 1.0));
+
             indices.push((start_vert as u32)+0);
             indices.push((start_vert as u32)+1);
             indices.push((start_vert as u32)+2);
-           
-            // middle
-            gfx.add_triangle_vertex(   gfx::place(start_angle+width_to_angle(start+(width*0.285), radius), 
-                                                  radius+curb_base+curb_height), 
-                                     (0.5, 0.5, 0.5, 1.0));
-            gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+(width*0.214), radius), 
-                                                 radius+curb_base+(curb_height*0.2)), 
-                                     (0.5, 0.5, 0.5, 1.0));
-            gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+(width*0.714), radius), 
-                                                 radius+curb_base+curb_height), 
-                                     (0.5, 0.5, 0.5, 1.0));
-            gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+(width*0.785), radius), 
-                                                 radius+curb_base+(curb_height*0.2)), 
-                                     (0.5, 0.5, 0.5, 1.0));
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+3);
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+3);
+            indices.push((start_vert as u32)+4);
             indices.push((start_vert as u32)+3);
             indices.push((start_vert as u32)+4);
             indices.push((start_vert as u32)+5);
-            indices.push((start_vert as u32)+4);
-            indices.push((start_vert as u32)+5);
-            indices.push((start_vert as u32)+6);
-            
-            // right 
-            gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+(width*0.714), radius), 
-                                                 radius+curb_base+curb_height), 
-                                     (0.65, 0.65, 0.65, 1.0));
-            gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+width, radius), 
-                                                 radius+curb_base+curb_height), 
-                                     (0.65, 0.65, 0.65, 1.0));
-            gfx.add_triangle_vertex(  gfx::place(start_angle+width_to_angle(start+(width*0.785), radius), 
-                                                 radius+curb_base+(curb_height*0.2)), 
-                                     (0.65, 0.65, 0.65, 1.0));
-            
-            indices.push((start_vert as u32)+7);
-            indices.push((start_vert as u32)+8);
-            indices.push((start_vert as u32)+9);
-            
-            // crosswalk stripe (left)
-            let start_vert = gfx.triangle_len();
-            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+0.3, radius), 
-                                                radius+curb_base-0.02), 
-                                     (0.8, 0.8, 0.8, 1.0));
-            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start-0.4, radius), 
-                                                radius+curb_base-0.14), 
-                                     (0.8, 0.8, 0.8, 1.0));
-            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+1.6, radius), 
-                                                radius+curb_base-0.14), 
-                                     (0.8, 0.8, 0.8, 1.0));
-            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+1.9, radius), 
-                                                radius+curb_base-0.02), 
-                                     (0.8, 0.8, 0.8, 1.0));
-            indices.push((start_vert as u32)+0);
-            indices.push((start_vert as u32)+1);
-            indices.push((start_vert as u32)+2);
-            indices.push((start_vert as u32)+0);
-            indices.push((start_vert as u32)+2);
-            indices.push((start_vert as u32)+3);
-        
-            // crosswalk stripe (right)
-            let start_vert = gfx.triangle_len();
-            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width-0.3, radius), 
-                                                radius+curb_base-0.02), 
-                                     (0.8, 0.8, 0.8, 1.0));
-            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width+0.4, radius), 
-                                                radius+curb_base-0.14), 
-                                     (0.8, 0.8, 0.8, 1.0));
-            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width-1.6, radius), 
-                                                radius+curb_base-0.14), 
-                                     (0.8, 0.8, 0.8, 1.0));
-            gfx.add_triangle_vertex( gfx::place(start_angle+width_to_angle(start+width-2.0, radius), 
-                                                radius+curb_base-0.02), 
-                                     (0.8, 0.8, 0.8, 1.0));
-            indices.push((start_vert as u32)+0);
-            indices.push((start_vert as u32)+1);
-            indices.push((start_vert as u32)+2);
-            indices.push((start_vert as u32)+0);
-            indices.push((start_vert as u32)+2);
-            indices.push((start_vert as u32)+3);
-        };
-        crosswalk_ramp(4.5,7.0); 
-        crosswalk_ramp(angle_to_width(arc_length, radius)-11.5, 7.0);
 
-        contents(gfx, indices, line_indices,
-                 start_angle+width_to_angle(sidewalk_width,radius), 
-                 arc_length-width_to_angle(sidewalk_width*2.0, radius), 
-                 radius+curb_base+curb_height);
+            let start_vert  = gfx.triangle_len()-2;
 
-        return 0;
-    }
-
-    fn block(gfx: &mut gfx::Gfx, 
-             indices: &mut Vec< u32 >,
-             line_indices: &mut Vec< u32 >,
-             assets: &mut assets::asset::Assets,
-             start_angle: f32,
-             arc_length: f32, 
-             radius: f32) -> usize {
-        // road
-        let road_height = 0.15;
-        let road_width  = width_to_angle(20.0, radius);
-        let start_vert  = gfx.triangle_len();
-
-        let num_steps   = 5;
-        let step_width  = arc_length / (num_steps as f32);
+            // the bulk of the road
+            for i in 1..(num_steps+1) {
+                gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius), 
+                                         (0.05, 0.05, 0.05, 1.0));
+                gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius+road_height), 
+                                         (0.05, 0.05, 0.05, 1.0));
+                indices.push((start_vert as u32)+(i*2 - 2));
+                indices.push((start_vert as u32)+(i*2 - 1));
+                indices.push((start_vert as u32)+(i*2));
+                indices.push((start_vert as u32)+(i*2 - 1));
+                indices.push((start_vert as u32)+(i*2));
+                indices.push((start_vert as u32)+(i*2 + 1));
+            }
 
 
 
 
-        gfx.add_triangle_vertex( gfx::place(start_angle, radius),
-                                 (0.05, 0.05, 0.05, 1.0));
-        gfx.add_triangle_vertex( gfx::place(start_angle, radius+road_height), 
-                                 (0.05, 0.05, 0.05, 1.0));
+            // TODO: handle different kinds of blocks
+            Planet::city_block(gfx, indices, line_indices, assets, 
+                               start_angle + width_to_angle(20.0, radius), 
+                               arc_length - width_to_angle(20.0, radius), radius);
 
-        // cross road crown
-        gfx.add_triangle_vertex( gfx::place(start_angle + width_to_angle(7.0,radius), radius+road_height+0.05),
-                                 (0.05, 0.05, 0.05, 1.0));
-        gfx.add_triangle_vertex( gfx::place(start_angle + width_to_angle(13.0, radius), radius+road_height+0.05),
-                                 (0.05, 0.05, 0.05, 1.0));
-        gfx.add_triangle_vertex( gfx::place(start_angle + width_to_angle(20.0, radius), radius),
-                                 (0.05, 0.05, 0.05, 1.0));
-        gfx.add_triangle_vertex( gfx::place(start_angle + width_to_angle(20.0, radius), radius+road_height),
-                                 (0.05, 0.05, 0.05, 1.0));
-
-        indices.push((start_vert as u32)+0);
-        indices.push((start_vert as u32)+1);
-        indices.push((start_vert as u32)+2);
-        indices.push((start_vert as u32)+0);
-        indices.push((start_vert as u32)+2);
-        indices.push((start_vert as u32)+3);
-        indices.push((start_vert as u32)+0);
-        indices.push((start_vert as u32)+3);
-        indices.push((start_vert as u32)+4);
-        indices.push((start_vert as u32)+3);
-        indices.push((start_vert as u32)+4);
-        indices.push((start_vert as u32)+5);
-
-        let start_vert  = gfx.triangle_len()-2;
-
-        // the bulk of the road
-        for i in 1..(num_steps+1) {
-            gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius), 
-                                     (0.05, 0.05, 0.05, 1.0));
-            gfx.add_triangle_vertex( gfx::place(start_angle+(step_width*(i as f32)), radius+road_height), 
-                                     (0.05, 0.05, 0.05, 1.0));
-            indices.push((start_vert as u32)+(i*2 - 2));
-            indices.push((start_vert as u32)+(i*2 - 1));
-            indices.push((start_vert as u32)+(i*2));
-            indices.push((start_vert as u32)+(i*2 - 1));
-            indices.push((start_vert as u32)+(i*2));
-            indices.push((start_vert as u32)+(i*2 + 1));
+            return 0;
         }
 
+        fn city_block(gfx: &mut gfx::Gfx, 
+                      indices: &mut Vec< u32 >,
+                      line_indices: &mut Vec< u32 >,
+                      assets: &mut assets::asset::Assets,
+                      start_angle: f32,
+                      arc_length: f32, 
+                      radius: f32) -> usize {
+            let lamppost = assets.get_asset(&"lamppost".to_string(),&"1".to_string());
 
+            render_asset(lamppost, gfx, indices, radius+0.25, 
+                         start_angle+width_to_angle(2.5,radius));
+            render_asset(lamppost, gfx, indices, radius+0.25, 
+                         start_angle+arc_length-width_to_angle(2.5,radius));
+            Planet::sidewalks(gfx, indices, line_indices, 
+                              Planet::small_city_buildings, 
+                              start_angle, arc_length, radius);
+            return 0;
+        }
 
+        fn foreground(gfx: &mut gfx::Gfx,
+                      display: &glium::Display,
+                      assets: &mut assets::asset::Assets,
+                      radius: f32) -> (usize, usize) {
+            let mut indices = Vec::< u32 >::new();
+            let mut line_indices = Vec::< u32 >::new();
+            Planet::block(gfx, &mut indices, &mut line_indices, assets, 0.0, width_to_angle(100.0, radius), radius);
+            return ( gfx.add_indices(display, &indices, 
+                                     PrimitiveType::TrianglesList),
+                     gfx.add_indices(display, &line_indices, 
+                                          PrimitiveType::LinesList) );
+        }
 
-        // TODO: handle different kinds of blocks
-        Planet::city_block(gfx, indices, line_indices, assets, 
-                           start_angle + width_to_angle(20.0, radius), 
-                           arc_length - width_to_angle(20.0, radius), radius);
-
-        return 0;
-    }
-
-    fn city_block(gfx: &mut gfx::Gfx, 
-                  indices: &mut Vec< u32 >,
-                  line_indices: &mut Vec< u32 >,
-                  assets: &mut assets::asset::Assets,
-                  start_angle: f32,
-                  arc_length: f32, 
+        fn circle(gfx: &mut gfx::Gfx, 
+                  display: &glium::Display, 
+                  num_verts: u32, 
                   radius: f32) -> usize {
-        let lamppost = assets.get_asset(&"lamppost".to_string(),&"1".to_string());
-
-        render_asset(lamppost, gfx, indices, radius+0.25, 
-                     start_angle+width_to_angle(2.5,radius));
-        render_asset(lamppost, gfx, indices, radius+0.25, 
-                     start_angle+arc_length-width_to_angle(2.5,radius));
-        Planet::sidewalks(gfx, indices, line_indices, 
-                          Planet::small_city_buildings, 
-                          start_angle, arc_length, radius);
-        return 0;
-    }
-
-    fn foreground(gfx: &mut gfx::Gfx,
-                  display: &glium::Display,
-                  assets: &mut assets::asset::Assets,
-                  radius: f32) -> usize {
-        let mut indices = Vec::< u32 >::new();
-        let mut line_indices = Vec::< u32 >::new();
-        Planet::block(gfx, &mut indices, &mut line_indices, assets, 0.0, width_to_angle(100.0, radius), radius);
-        return gfx.add_indices(display, &indices, PrimitiveType::TrianglesList);
-    }
-
-    fn circle(gfx: &mut gfx::Gfx, 
-              display: &glium::Display, 
-              num_verts: u32, 
-              radius: f32) -> usize {
-        let angle_step = (3.14159*2.0)/(num_verts as f32);
-        let mut indices = Vec::new();
-        let start_vert = gfx.line_len();
-        for i in 0..num_verts {
-            let angle = (i as f32)*angle_step;
-            gfx.add_line_vertex( ( angle.sin()*radius, angle.cos()*radius ) );
-            indices.push((start_vert as u32)+(i as u32));
+            let angle_step = (3.14159*2.0)/(num_verts as f32);
+            let mut indices = Vec::new();
+            let start_vert = gfx.line_len();
+            for i in 0..num_verts {
+                let angle = (i as f32)*angle_step;
+                gfx.add_line_vertex( ( angle.sin()*radius, angle.cos()*radius ) );
+                indices.push((start_vert as u32)+(i as u32));
+            }
+            return gfx.add_indices(display, &indices, PrimitiveType::LineLoop);
         }
-        return gfx.add_indices(display, &indices, PrimitiveType::LineLoop);
+
+        fn sky(gfx: &mut gfx::Gfx,
+               display: &glium::Display, 
+               inner_radius: f32,
+               height: f32,
+               num_divisions: u32) -> usize {
+            let angle_step = (3.14159*2.0)/(num_divisions as f32);
+            let mut indices = Vec::new();
+            let start_vert = gfx.triangle_len();
+            for i in 0..(num_divisions) {
+                let angle = (i as f32)*angle_step;
+                gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+height), 
+                                           angle.cos()*(inner_radius+height) ),
+                                         (0.1, 0.2, 0.5, 1.0));
+
+                gfx.add_triangle_vertex( ( angle.sin()*inner_radius,
+                                           angle.cos()*inner_radius ),
+                                         (0.3, 0.4, 0.5, 1.0));
+                indices.push((start_vert as u32)+(i as u32)*2);
+                indices.push((start_vert as u32)+(i as u32)*2+1);
+            }
+            indices.push(start_vert as u32);
+            indices.push((start_vert as u32)+1);
+            let start_vert = gfx.triangle_len();
+            for i in 0..(num_divisions) {
+                let angle = (i as f32)*angle_step;
+                gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+(height*1.8)),
+                                           angle.cos()*(inner_radius+(height*1.8)) ),
+                                         (0.0, 0.0, 0.0, 1.0));
+                gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+height),
+                                           angle.cos()*(inner_radius+height) ),
+                                         (0.1, 0.2, 0.5, 1.0));
+
+                indices.push((start_vert as u32)+(i as u32)*2);
+                indices.push((start_vert as u32)+(i as u32)*2+1);
+            }
+            indices.push(start_vert as u32);
+            indices.push((start_vert as u32)+1);
+            return gfx.add_indices(display, &indices, PrimitiveType::TriangleStrip);
+        }
+
+
+        fn mountains(gfx: &mut gfx::Gfx, 
+                     display: &glium::Display, 
+                     height_fn: fn(f32) -> f32,
+                     inner_radius: f32, 
+                     num_divisions: u32 ) -> usize {
+            let angle_step = (3.14159*2.0)/(num_divisions as f32);
+            let mut indices = Vec::new();
+            let start_vert = gfx.triangle_len();
+            for i in 0..(num_divisions) {
+
+                let angle  = (i as f32)*angle_step;
+                let height = height_fn(angle);
+                gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+height),
+                                           angle.cos()*(inner_radius+height) ),
+                                         (0.05, 0.05, 0.1, 1.0));
+
+                gfx.add_triangle_vertex( ( angle.sin()*inner_radius,
+                                           angle.cos()*inner_radius ),
+                                         (0.2, 0.2, 0.5, 1.0));
+                indices.push((start_vert as u32)+(i as u32)*2);
+                indices.push((start_vert as u32)+(i as u32)*2+1);
+            }
+            indices.push(start_vert as u32);
+            indices.push((start_vert as u32)+1);
+            return gfx.add_indices(display, &indices, PrimitiveType::TriangleStrip);
+        }
+
+    }
+     
+
+    fn tall_mountains(angle: f32) -> f32 {
+        let max_height = 3.0f32;
+        return (max_height*1.2) + (max_height * (angle*83.0).sin()*0.3) + (max_height * (angle*61.0).cos()*0.3);
     }
 
-    fn sky(gfx: &mut gfx::Gfx,
-           display: &glium::Display, 
-           inner_radius: f32,
-           height: f32,
-           num_divisions: u32) -> usize {
-        let angle_step = (3.14159*2.0)/(num_divisions as f32);
-        let mut indices = Vec::new();
-        let start_vert = gfx.triangle_len();
-        for i in 0..(num_divisions) {
-            let angle = (i as f32)*angle_step;
-            gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+height), 
-                                       angle.cos()*(inner_radius+height) ),
-                                     (0.1, 0.2, 0.5, 1.0));
-
-            gfx.add_triangle_vertex( ( angle.sin()*inner_radius,
-                                       angle.cos()*inner_radius ),
-                                     (0.3, 0.4, 0.5, 1.0));
-            indices.push((start_vert as u32)+(i as u32)*2);
-            indices.push((start_vert as u32)+(i as u32)*2+1);
-        }
-        indices.push(start_vert as u32);
-        indices.push((start_vert as u32)+1);
-        let start_vert = gfx.triangle_len();
-        for i in 0..(num_divisions) {
-            let angle = (i as f32)*angle_step;
-            gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+(height*1.8)),
-                                       angle.cos()*(inner_radius+(height*1.8)) ),
-                                     (0.0, 0.0, 0.0, 1.0));
-            gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+height),
-                                       angle.cos()*(inner_radius+height) ),
-                                     (0.1, 0.2, 0.5, 1.0));
-
-            indices.push((start_vert as u32)+(i as u32)*2);
-            indices.push((start_vert as u32)+(i as u32)*2+1);
-        }
-        indices.push(start_vert as u32);
-        indices.push((start_vert as u32)+1);
-        return gfx.add_indices(display, &indices, PrimitiveType::TriangleStrip);
+    fn short_mountains(angle: f32) -> f32 {
+        let max_height = 1.0f32;
+        return (max_height*1.25) + (max_height * (angle*59.0).sin()*0.7) + (max_height * (angle*29.0).cos()*0.7);
     }
 
-
-    fn mountains(gfx: &mut gfx::Gfx, 
-                 display: &glium::Display, 
-                 height_fn: fn(f32) -> f32,
-                 inner_radius: f32, 
-                 num_divisions: u32 ) -> usize {
-        let angle_step = (3.14159*2.0)/(num_divisions as f32);
-        let mut indices = Vec::new();
-        let start_vert = gfx.triangle_len();
-        for i in 0..(num_divisions) {
-
-            let angle  = (i as f32)*angle_step;
-            let height = height_fn(angle);
-            gfx.add_triangle_vertex( ( angle.sin()*(inner_radius+height),
-                                       angle.cos()*(inner_radius+height) ),
-                                     (0.05, 0.05, 0.1, 1.0));
-
-            gfx.add_triangle_vertex( ( angle.sin()*inner_radius,
-                                       angle.cos()*inner_radius ),
-                                     (0.2, 0.2, 0.5, 1.0));
-            indices.push((start_vert as u32)+(i as u32)*2);
-            indices.push((start_vert as u32)+(i as u32)*2+1);
-        }
-        indices.push(start_vert as u32);
-        indices.push((start_vert as u32)+1);
-        return gfx.add_indices(display, &indices, PrimitiveType::TriangleStrip);
-    }
-
-}
- 
-
-fn tall_mountains(angle: f32) -> f32 {
-    let max_height = 3.0f32;
-    return (max_height*1.2) + (max_height * (angle*83.0).sin()*0.3) + (max_height * (angle*61.0).cos()*0.3);
-}
-
-fn short_mountains(angle: f32) -> f32 {
-    let max_height = 1.0f32;
-    return (max_height*1.25) + (max_height * (angle*59.0).sin()*0.7) + (max_height * (angle*29.0).cos()*0.7);
-}
-
-struct PlayerShip {
-    position: (f32, f32),
-    velocity: (f32, f32),
-    angle: f32,
-    scale: f32,
-    flags: u32,
-    gear_state: LandingGearState,
-    ship_geometry: usize,
+    struct PlayerShip {
+        position: (f32, f32),
+        velocity: (f32, f32),
+        angle: f32,
+        scale: f32,
+        flags: u32,
+        gear_state: LandingGearState,
+        ship_geometry: usize,
     exhaust_draw: usize,
     left_gear_geometry: usize,
     right_gear_geometry: usize,
@@ -616,8 +743,8 @@ impl PlayerShip {
             self.flags |= LANDED;
             self.velocity.0 = 0.0;
             self.velocity.1 = 0.0;
-            self.position.0 = angle.sin()*planet.size;
-            self.position.1 = angle.cos()*planet.size;
+            self.position.0 = angle.sin()*(planet.size+2.67);
+            self.position.1 = angle.cos()*(planet.size+2.67);
         }
     }
 
@@ -741,17 +868,22 @@ impl PlayerShip {
 
         // gear legs
         gfx.change_translation(self.gfx_left_gear_translation, 
-                               gfx::add_points(self.position, gfx::scale_point(gfx::rotate ((-3.0, -7.0), self.angle), self.scale)));
+                               gfx::add_points(self.position, 
+                                               gfx::scale_point(gfx::rotate ((-3.0, -7.0), self.angle), self.scale)));
+
         gfx.change_translation(self.gfx_right_gear_translation, 
-                               gfx::add_points(self.position, gfx::scale_point(gfx::rotate ((3.0, -7.0), self.angle), self.scale)));
+                               gfx::add_points(self.position, 
+                                               gfx::scale_point(gfx::rotate ((3.0, -7.0), self.angle), self.scale)));
 
         // gear feet
         gfx.change_translation(self.gfx_left_foot_translation, 
-                               gfx::add_points(self.position, gfx::scale_point(gfx::add_points(gfx::rotate((-3.0, -7.0), self.angle),
-                                                                                gfx::rotate((-2.0, -5.5), self.angle-gear_angle)), self.scale )));
+                               gfx::add_points(self.position, 
+                                               gfx::scale_point(gfx::add_points(gfx::rotate((-3.0, -7.0), self.angle),
+                                                                gfx::rotate((-2.0, -5.5), self.angle-gear_angle)), self.scale )));
         gfx.change_translation(self.gfx_right_foot_translation, 
-                               gfx::add_points(self.position, gfx::scale_point(gfx::add_points(gfx::rotate((3.0, -7.0), self.angle),
-                                                                                gfx::rotate((2.0, -5.5), self.angle+gear_angle)), self.scale )));
+                               gfx::add_points(self.position, 
+                                               gfx::scale_point(gfx::add_points(gfx::rotate((3.0, -7.0), self.angle),
+                                                                gfx::rotate((2.0, -5.5), self.angle+gear_angle)), self.scale )));
 
         gfx.change_rotation(self.gfx_left_gear_rotation, self.angle-gear_angle);
         gfx.change_rotation(self.gfx_right_gear_rotation, self.angle+gear_angle);
@@ -1201,11 +1333,11 @@ impl PlayerShip {
         handles.insert("exhaust_draw".to_string(), gfx.triangle_draw());
         
          
-        gfx.skip(handles["ship_draw"]);
-        gfx.skip(handles["left_gear_draw"]);
-        gfx.skip(handles["right_gear_draw"]);
-        gfx.skip(handles["left_foot_draw"]);
-        gfx.skip(handles["right_foot_draw"]);
+        //gfx.skip(handles["ship_draw"]);
+        //gfx.skip(handles["left_gear_draw"]);
+        //gfx.skip(handles["right_gear_draw"]);
+        //gfx.skip(handles["left_foot_draw"]);
+        //gfx.skip(handles["right_foot_draw"]);
 
         return handles;
     }
