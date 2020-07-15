@@ -69,6 +69,12 @@ enum WindowStyle {
     RoundTop,
 }
 
+enum DoorStyle {
+    Plain,
+    Double,
+    RoundTop,
+}
+
 struct Planet {
     position: (f32, f32),
     velocity: (f32, f32),
@@ -156,6 +162,40 @@ impl Planet {
             gfx.line_draw();
             
             return handles;
+        }
+
+
+        fn door(gfx: &mut gfx::Gfx, 
+                indices: &mut Vec< u32 >,
+                line_indices: &mut Vec< u32 >,
+                angle: f32,
+                radius: f32,
+                extents: (f32, f32),
+                style: DoorStyle,
+                ) -> usize {
+            let door_color        = (0.8, 0.8, 0.8, 1.0);
+            let window_inset      = 0.2;
+
+            let start_vert    = gfx.triangle_len();
+            gfx.add_triangle_vertex( gfx::place(angle, radius), 
+                                     door_color);
+            gfx.add_triangle_vertex( gfx::place(angle, radius+extents.1), 
+                                     door_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0, radius), radius), 
+                                     door_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0, radius), radius+extents.1), 
+                                     door_color);
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+3);
+            
+            Planet::window(gfx, indices, line_indices, 
+                           angle+width_to_angle(window_inset, radius),
+                           radius + 0.4, (extents.0, extents.1), WindowStyle::Plain);
+            return 0;
         }
 
         fn window(gfx: &mut gfx::Gfx, 
@@ -293,9 +333,11 @@ impl Planet {
 
             }
 
+            Planet::door(gfx, indices, line_indices,
+                         start_angle+(step_width/2.0), radius+0.1, (6.0, 1.5), DoorStyle::Plain);
 
             // windows, have to run the loop again...
-            for i in 1..(num_steps+1) {
+            for i in 2..(num_steps+1) {
                 Planet::window(gfx, indices, line_indices, 
                                start_angle+(step_width*(i as f32)-step_width+(step_width*0.05)), 
                                radius + 0.4, (7.8, 0.8), WindowStyle::Plain);
