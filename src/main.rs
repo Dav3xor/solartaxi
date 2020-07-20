@@ -74,6 +74,10 @@ enum DoorStyle {
     Double,
     RoundTop,
 }
+enum PaneStyle {
+    Plain,
+    Tinted
+}
 
 struct Planet {
     position: (f32, f32),
@@ -173,6 +177,7 @@ impl Planet {
                 extents: (f32, f32),
                 style: DoorStyle,
                 ) -> usize {
+            
             let door_color        = (0.8, 0.8, 0.8, 1.0);
             let window_inset      = 0.2;
 
@@ -198,6 +203,52 @@ impl Planet {
             return 0;
         }
 
+        fn windowpane(gfx: &mut gfx::Gfx, 
+                      indices: &mut Vec< u32 >,
+                      line_indices: &mut Vec< u32 >,
+                      angle: f32,
+                      radius: f32,
+                      extents: (f32, f32),
+                      style: PaneStyle,
+                      ) -> usize {
+            // window pane
+            let darker_color      = (0.01, 0.02, 0.05, 1.0);
+            let lighter_color     = (0.12, 0.16, 0.4, 1.0);
+            let start_vert    = gfx.triangle_len();
+            gfx.add_triangle_vertex( gfx::place(angle, radius), 
+                                     darker_color);
+            gfx.add_triangle_vertex( gfx::place(angle, radius+extents.1), 
+                                     (0.0, 0.0, 0.0, 1.0));
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0, radius), radius), 
+                                     lighter_color);
+            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0, radius), radius+extents.1), 
+                                     darker_color);
+            indices.push((start_vert as u32)+0);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+1);
+            indices.push((start_vert as u32)+2);
+            indices.push((start_vert as u32)+3);
+            
+            let start_vert = gfx.line_len();
+            gfx.add_line_vertex( gfx::place(angle, radius));
+            gfx.add_line_vertex( gfx::place(angle, radius+extents.1));
+            gfx.add_line_vertex( gfx::place(angle+width_to_angle(extents.0, radius),radius));
+            gfx.add_line_vertex( gfx::place(angle+width_to_angle(extents.0, radius+extents.1),radius+extents.1));
+
+            line_indices.push((start_vert as u32)+0);
+            line_indices.push((start_vert as u32)+1);
+            line_indices.push((start_vert as u32)+1);
+            line_indices.push((start_vert as u32)+3);
+            line_indices.push((start_vert as u32)+2);
+            line_indices.push((start_vert as u32)+0);
+            line_indices.push((start_vert as u32)+3);
+            line_indices.push((start_vert as u32)+2);
+            
+            return 0;
+        }
+
+
         fn window(gfx: &mut gfx::Gfx, 
                   indices: &mut Vec< u32 >,
                   line_indices: &mut Vec< u32 >,
@@ -207,30 +258,17 @@ impl Planet {
                   style: WindowStyle,
                   ) -> usize {
 
-            let darker_color      = (0.01, 0.02, 0.05, 1.0);
-            let lighter_color     = (0.12, 0.16, 0.4, 1.0);
             let trim_color        = (0.8, 0.8, 0.8, 1.0);
-            let shaded_trim_color = (0.3, 0.3, 0.3, 1.0);
+            let shaded_trim_color = (0.5, 0.5, 0.5, 1.0);
             let sill_height   = 0.06;
             let window_inset  = 0.5;
 
+            Planet::windowpane(gfx, indices, line_indices, 
+                               angle+width_to_angle(window_inset, radius), 
+                               radius+sill_height, 
+                               (extents.0 - window_inset*2.0, extents.1 - sill_height*2.0),
+                               PaneStyle::Plain);
 
-            // window pane
-            let start_vert    = gfx.triangle_len();
-            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(window_inset, radius), radius+sill_height), 
-                                     darker_color);
-            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(window_inset, radius), radius+extents.1-sill_height), 
-                                     (0.0, 0.0, 0.0, 1.0));
-            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0-window_inset, radius), radius+sill_height), 
-                                     lighter_color);
-            gfx.add_triangle_vertex( gfx::place(angle+width_to_angle(extents.0-window_inset, radius), radius+extents.1), 
-                                     darker_color);
-            indices.push((start_vert as u32)+0);
-            indices.push((start_vert as u32)+1);
-            indices.push((start_vert as u32)+2);
-            indices.push((start_vert as u32)+1);
-            indices.push((start_vert as u32)+2);
-            indices.push((start_vert as u32)+3);
            
             // lower sill
             let start_vert    = gfx.triangle_len();
@@ -282,21 +320,6 @@ impl Planet {
             indices.push((start_vert as u32)+1);
             indices.push((start_vert as u32)+2);
             indices.push((start_vert as u32)+3);
-
-            let start_vert = gfx.line_len();
-            gfx.add_line_vertex( gfx::place(angle+width_to_angle(window_inset, radius), radius+sill_height));
-            gfx.add_line_vertex( gfx::place(angle+width_to_angle(window_inset, radius), radius+extents.1-sill_height));
-            gfx.add_line_vertex( gfx::place(angle+width_to_angle(extents.0-window_inset, radius),radius+sill_height));
-            gfx.add_line_vertex( gfx::place(angle+width_to_angle(extents.0-window_inset, radius+extents.1),radius+extents.1-sill_height));
-
-            line_indices.push((start_vert as u32)+0);
-            line_indices.push((start_vert as u32)+1);
-            line_indices.push((start_vert as u32)+1);
-            line_indices.push((start_vert as u32)+3);
-            line_indices.push((start_vert as u32)+2);
-            line_indices.push((start_vert as u32)+0);
-            line_indices.push((start_vert as u32)+3);
-            line_indices.push((start_vert as u32)+2);
             
             return 0;
         }
